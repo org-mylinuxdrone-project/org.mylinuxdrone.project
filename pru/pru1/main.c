@@ -10,8 +10,8 @@
 
 uint16_t RESULT = 0x00;
 uint16_t RESULT1 = 0x00;
-uint8_t mosiData[256] = { };
-uint8_t misoData[256] = { };
+uint16_t mosiData[256] = { };
+uint16_t misoData[256] = { };
 
 
 /**
@@ -32,14 +32,12 @@ int main(void)
                                          MISO,
                                          CLK,
                                          CS },
-                               PRU_20MHZ_CPU_CYCLES, mosiData, misoData };
+                               PRU_1MHZ_CPU_CYCLES, mosiData, misoData };
 
-    mosiData[0] = 0xF5;
-    mosiData[1] = 0x00;
+    mosiData[0] = 0xF500;
 
     while (1)
     {
-        pru_spi_transferData(&spiStatus, 2);
-        RESULT = (((uint16_t) misoData[0]) << 8) | (misoData[1]);
+        pru_spi_transferData(&spiStatus, 1);
     }
 }

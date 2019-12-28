@@ -20,8 +20,8 @@ typedef struct  {
         uint8_t CS;
     } pins;
     uint8_t clockDelayCycles;
-    uint8_t* mosiData;
-    uint8_t* misoData;
+    uint16_t* mosiData;
+    uint16_t* misoData;
 } PruSpiStatus;
 
 void pru_spi_transferData(PruSpiStatus* status, uint16_t bytes);
