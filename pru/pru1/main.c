@@ -41,3 +41,4 @@ int main(void)
         pru_spi_transferData(&spiStatus, 1);
     }
 }
+
