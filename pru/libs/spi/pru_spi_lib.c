@@ -62,9 +62,9 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
     uint32_t csMask = (1 << status->pins.CS);
     uint32_t csMaskNeg = ~(1 << status->pins.CS);
     uint8_t clockDelayCycles = status->clockDelayCycles;
-
+    uint16_t counter = 0xffff;
     // reset clock and select device
-    __R30 |= (1 << status->pins.CLK);
+    __R30 |= (0x10);
     __R30 &= ~(1 << status->pins.CS);
 
     // transfer bytes (MSB first, SPI Mode 3 (cpha=1, cpol=1))
@@ -73,40 +73,30 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
         mosi = *(status->mosiData + pos);
 
         // transfer byte
-        for (bit = 0; bit < 16; bit++)
+        for (counter = 0x8000; counter != 0; counter = counter >> 1)
         {
-//            while ( PRU_CTRL.CYCLE < (clockDelayCycles))
-//                ;
-            miso = miso << 1;
 
             // clock down
-            __R30 &= clkMaskNeg;
-            // count from down
-//            PRU_CTRL.CYCLE = 0;
+            __R30 &= ~(0x10);
 
             // transfer mosi bit
-            if ((mosi << bit) & 0x8000) {
-                __R30 |= mosiMask;
+            if ((mosi & counter)) {
+                __R30 |= 0x80;
             }
             else {
-                __R30 &= mosiMaskNeg;
+                __R30 &= ~(0x80);
             }
-
-            // delay 400ns before up clock
-//            while ( PRU_CTRL.CYCLE < clockDelayCycles)
-//                ;
+            __delay_cycles(1);
 
             // clock up
-            __R30 |= clkMask;
-            // count from up
-//            PRU_CTRL.CYCLE = 0;
+            __R30 |= 0x10;
 
             // read miso bit
-            if (__R31 & misoMask) {
-                miso |= (uint16_t)(0x01);
+            if (__R31 & 0x100) {
+                miso |= counter;
             }
             else {
-                miso &= ~((uint16_t)(0x01));
+                miso &= ~(counter);
             }
         }
         *(status->misoData + pos) = miso;
