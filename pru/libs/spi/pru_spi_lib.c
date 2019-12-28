@@ -47,8 +47,8 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
     CT_CFG.GPCFG0 = 0;
 
     // enable counter
-    PRU_CTRL.CYCLE = 0;
-    PRU_CTRL.CTRL_bit.CTR_EN = 1;
+//    PRU_CTRL.CYCLE = 0;
+//    PRU_CTRL.CTRL_bit.CTR_EN = 1;
 
     uint16_t pos = 0;
     uint16_t miso = 0;
@@ -62,8 +62,6 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
     uint32_t csMask = (1 << status->pins.CS);
     uint32_t csMaskNeg = ~(1 << status->pins.CS);
     uint8_t clockDelayCycles = status->clockDelayCycles;
-    uint16_t setMisoBit = 0x01;
-    uint16_t unsetMisoBit = ~(0x01);
 
     // reset clock and select device
     __R30 |= (1 << status->pins.CLK);
@@ -77,14 +75,14 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
         // transfer byte
         for (bit = 0; bit < 16; bit++)
         {
-            while ( PRU_CTRL.CYCLE < (clockDelayCycles))
-                ;
+//            while ( PRU_CTRL.CYCLE < (clockDelayCycles))
+//                ;
             miso = miso << 1;
 
             // clock down
             __R30 &= clkMaskNeg;
             // count from down
-            PRU_CTRL.CYCLE = 0;
+//            PRU_CTRL.CYCLE = 0;
 
             // transfer mosi bit
             if ((mosi << bit) & 0x8000) {
@@ -95,13 +93,13 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
             }
 
             // delay 400ns before up clock
-            while ( PRU_CTRL.CYCLE < clockDelayCycles)
-                ;
+//            while ( PRU_CTRL.CYCLE < clockDelayCycles)
+//                ;
 
             // clock up
             __R30 |= clkMask;
             // count from up
-            PRU_CTRL.CYCLE = 0;
+//            PRU_CTRL.CYCLE = 0;
 
             // read miso bit
             if (__R31 & misoMask) {

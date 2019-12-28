@@ -32,7 +32,7 @@ int main(void)
                                          MISO,
                                          CLK,
                                          CS },
-                               PRU_1MHZ_CPU_CYCLES, mosiData, misoData };
+                               PRU_20MHZ_CPU_CYCLES, mosiData, misoData };
 
     mosiData[0] = 0xF500;
 
