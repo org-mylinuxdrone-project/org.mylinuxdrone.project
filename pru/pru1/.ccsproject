@@ -7,8 +7,9 @@
 	<deviceEndianness value="little"/>
 	<codegenToolVersion value="2.2.1"/>
 	<isElfFormat value="true"/>
+	<linkerCommandFile value="AM335x_PRU.cmd"/>
+	<rts value="libc.a"/>
 	<createSlaveProjects value=""/>
 	<templateProperties value="id=com.ti.common.project.core.emptyProjectWithMainTemplate,"/>
 	<filesToOpen value="main.c,"/>
-	<isTargetManual value="false"/>
 </projectOptions>
