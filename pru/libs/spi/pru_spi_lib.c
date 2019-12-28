@@ -44,7 +44,7 @@ inline void pru_spi_DelayCycles(uint8_t cycles)
 void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
 {
     //Set the CFG Register to direct output instead of serial output
-    CT_CFG.GPCFG0 = 0;
+    CT_CFG.GPCFG1 = 0;
 
     // enable counter
 //    PRU_CTRL.CYCLE = 0;
