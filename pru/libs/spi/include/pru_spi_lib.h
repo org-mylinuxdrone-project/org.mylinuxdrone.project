@@ -13,13 +13,6 @@
 #define PRU_20MHZ_CPU_CYCLES 5
 
 typedef struct  {
-    volatile struct {
-        uint8_t MOSI;
-        uint8_t MISO;
-        uint8_t CLK;
-        uint8_t CS;
-    } pins;
-    uint8_t clockDelayCycles;
     uint16_t* mosiData;
     uint16_t* misoData;
 } PruSpiStatus;

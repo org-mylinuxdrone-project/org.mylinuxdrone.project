@@ -9,7 +9,8 @@
 #define MPU_INT 9       //P8_29
 
 uint16_t RESULT = 0x00;
-uint16_t RESULT1 = 0x00;
+uint16_t CHECK = 0x00;
+uint16_t ERROR = 0x00;
 uint16_t mosiData[256] = { };
 uint16_t misoData[256] = { };
 
@@ -27,18 +28,20 @@ int main(void)
      */
     CT_CFG.SYSCFG_bit.STANDBY_INIT = 0;
 
-    PruSpiStatus spiStatus = { .pins = {
-                                         MOSI,
-                                         MISO,
-                                         CLK,
-                                         CS },
-                               PRU_20MHZ_CPU_CYCLES, mosiData, misoData };
+    PruSpiStatus spiStatus = {mosiData, misoData };
 
     mosiData[0] = 0xF500;
-
+    CHECK = 0;
+    ERROR = 0;
+    __delay_cycles(100);
     while (1)
     {
         pru_spi_transferData(&spiStatus, 1);
+        RESULT = spiStatus.misoData[0];
+        if(RESULT != 0x70) {
+            CHECK++;
+            ERROR = RESULT;
+        }
     }
 }
 

@@ -53,24 +53,19 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
     uint16_t pos = 0;
     uint16_t miso = 0;
     uint16_t mosi = 0;
-    uint8_t bit = 0;
-    uint32_t mosiMask = (1 << status->pins.MOSI);
-    uint32_t mosiMaskNeg = ~(1 << status->pins.MOSI);
-    uint32_t misoMask = (1 << status->pins.MISO);
-    uint32_t clkMask = (1 << status->pins.CLK);
-    uint32_t clkMaskNeg = ~(1 << status->pins.CLK);
-    uint32_t csMask = (1 << status->pins.CS);
-    uint32_t csMaskNeg = ~(1 << status->pins.CS);
-    uint8_t clockDelayCycles = status->clockDelayCycles;
-    uint16_t counter = 0xffff;
+    uint16_t counter = 0;
+    uint16_t* mosiPtr  = status->mosiData;
+    uint16_t* misoPtr  = status->misoData;
+
     // reset clock and select device
     __R30 |= (0x10);
-    __R30 &= ~(1 << status->pins.CS);
+    __R30 &= ~(1 << 10);
 
     // transfer bytes (MSB first, SPI Mode 3 (cpha=1, cpol=1))
-    for (pos = 0; pos < hwords; pos++)
+    for (pos = 0x1; pos != 0; pos = pos >> 1)
     {
-        mosi = *(status->mosiData + pos);
+        mosi = *(mosiPtr);
+        mosiPtr++;
 
         // transfer byte
         for (counter = 0x8000; counter != 0; counter = counter >> 1)
@@ -78,6 +73,7 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
 
             // clock down
             __R30 &= ~(0x10);
+            __delay_cycles(2);
 
             // transfer mosi bit
             if ((mosi & counter)) {
@@ -86,7 +82,7 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
             else {
                 __R30 &= ~(0x80);
             }
-            __delay_cycles(1);
+            __delay_cycles(2);
 
             // clock up
             __R30 |= 0x10;
@@ -98,11 +94,13 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
             else {
                 miso &= ~(counter);
             }
+            __delay_cycles(2);
         }
-        *(status->misoData + pos) = miso;
+        *(misoPtr) = miso;
+        misoPtr++;
     }
 
     // deselect device
-    __R30 |= (1 << status->pins.CS);
-
+    __R30 |= (1 << 10);
+    __delay_cycles(40);
 }
