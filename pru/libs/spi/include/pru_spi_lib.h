@@ -13,11 +13,11 @@
 #define PRU_20MHZ_CPU_CYCLES 5
 
 typedef struct  {
-    uint16_t* mosiData;
-    uint16_t* misoData;
+    uint16_t mosiData;
+    uint16_t misoData;
 } PruSpiStatus;
 
-void pru_spi_transferData(PruSpiStatus* status, uint16_t bytes);
+void pru_spi_transferData(PruSpiStatus* status);
 inline void pru_spi_DelayCycles(uint8_t cycles);
 
 

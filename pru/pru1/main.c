@@ -1,6 +1,13 @@
 #include <resource_table.h>
 #include <pru_spi_lib.h>
 #include <pru_cfg.h>
+#include <pru_ctrl.h>
+
+#ifdef PRU1_CTRL
+#define PRU_CTRL PRU1_CTRL
+#else
+#define PRU_CTRL PRU0_CTRL
+#endif
 
 #define MOSI    7       //P8_40
 #define CLK     4       //P8_41
@@ -11,8 +18,9 @@
 uint16_t RESULT = 0x00;
 uint16_t CHECK = 0x00;
 uint16_t ERROR = 0x00;
-uint16_t mosiData[256] = { };
-uint16_t misoData[256] = { };
+uint32_t COUNTER = 0x00;
+uint16_t mosiData = 0xF500;
+uint16_t misoData = 0x0;
 
 
 /**
@@ -20,6 +28,7 @@ uint16_t misoData[256] = { };
  */
 int main(void)
 {
+    uint32_t i = 0;
     /*
      * CT_CFG.SYSCFG_bit.STANDBY_INIT : the object is used to write data to
      * the SYSCFG register. Writing 0 to the STANDBY_INIT section of the
@@ -30,22 +39,23 @@ int main(void)
 
     PruSpiStatus spiStatus = {mosiData, misoData };
 
-    mosiData[0] = 0xF500;
-    mosiData[1] = 0xF500;
-    mosiData[2] = 0xF500;
-    mosiData[3] = 0xF500;
-    mosiData[4] = 0xF500;
     CHECK = 0;
     ERROR = 0;
     while (1)
     {
-        __delay_cycles(100);
-        pru_spi_transferData(&spiStatus, 4);
-        RESULT = spiStatus.misoData[0];
-        if(RESULT != 0x70) {
-            CHECK++;
-            ERROR = RESULT;
+        // enable counter
+        PRU_CTRL.CYCLE = 0;
+        PRU_CTRL.CTRL_bit.CTR_EN = 1;
+        for (i = 0x80000000; i != 0; i = i >> 1){
+            pru_spi_transferData(&spiStatus);
+            RESULT = spiStatus.misoData;
+            if(RESULT != 0x70) {
+                CHECK++;
+                ERROR = RESULT;
+            }
         }
+        PRU_CTRL.CTRL_bit.CTR_EN = 0;
+        COUNTER = PRU_CTRL.CYCLE;
     }
 }
 
