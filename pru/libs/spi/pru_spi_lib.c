@@ -62,7 +62,7 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
     __R30 &= ~(1 << 10);
 
     // transfer bytes (MSB first, SPI Mode 3 (cpha=1, cpol=1))
-    for (pos = 0x1; pos != 0; pos = pos >> 1)
+    for (pos = 1 << (hwords -1); pos != 0; pos = pos >> 1)
     {
         mosi = *(mosiPtr);
         mosiPtr++;
@@ -73,7 +73,6 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
 
             // clock down
             __R30 &= ~(0x10);
-            __delay_cycles(2);
 
             // transfer mosi bit
             if ((mosi & counter)) {
@@ -84,9 +83,6 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
             }
             __delay_cycles(2);
 
-            // clock up
-            __R30 |= 0x10;
-
             // read miso bit
             if (__R31 & 0x100) {
                 miso |= counter;
@@ -94,6 +90,10 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
             else {
                 miso &= ~(counter);
             }
+
+            // clock up
+            __R30 |= 0x10;
+
             __delay_cycles(2);
         }
         *(misoPtr) = miso;
@@ -102,5 +102,5 @@ void pru_spi_transferData(PruSpiStatus* status, uint16_t hwords)
 
     // deselect device
     __R30 |= (1 << 10);
-    __delay_cycles(40);
+    __delay_cycles(20);
 }
