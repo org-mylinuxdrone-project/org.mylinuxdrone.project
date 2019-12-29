@@ -44,8 +44,8 @@ int main(void)
     while (1)
     {
         // enable counter
-        PRU_CTRL.CYCLE = 0;
-        PRU_CTRL.CTRL_bit.CTR_EN = 1;
+//        PRU_CTRL.CYCLE = 0;
+//        PRU_CTRL.CTRL_bit.CTR_EN = 1;
         for (i = 0x80000000; i != 0; i = i >> 1){
             pru_spi_transferData(&spiStatus);
             RESULT = spiStatus.misoData;
@@ -54,8 +54,8 @@ int main(void)
                 ERROR = RESULT;
             }
         }
-        PRU_CTRL.CTRL_bit.CTR_EN = 0;
-        COUNTER = PRU_CTRL.CYCLE;
+//        PRU_CTRL.CTRL_bit.CTR_EN = 0;
+//        COUNTER = PRU_CTRL.CYCLE;
     }
 }
 

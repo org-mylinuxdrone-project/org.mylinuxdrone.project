@@ -34,15 +34,15 @@ void pru_spi_transferData(PruSpiStatus* status)
     uint16_t counter = 0;
 
     // reset clock and select device
-    __R30 |= (0x10);
-    __R30 &= ~(1 << 10);
+    __R30 |= (0x10); // 0x10 = 1 << CLK (bit 4)
+    __R30 &= ~(1 << 10); // 1 << CS (bit 10)
 
     // transfer byte
     for (counter = 0x8000; counter != 0; counter = counter >> 1)
     {
 
         // clock down
-        __R30 &= ~(0x10);
+        __R30 &= ~(0x10); // 0x10 = 1 << CLK (bit 4)
 
         // transfer mosi bit
         if ((mosi & counter))
@@ -53,10 +53,10 @@ void pru_spi_transferData(PruSpiStatus* status)
         {
             __R30 &= ~(0x80);
         }
-        __delay_cycles(2);
+        __delay_cycles(5);
 
         // read miso bit
-        if (__R31 & 0x100)
+        if (__R31 & 0x100) // 0x100 = 1 << MISO (bit 7)
         {
             miso |= counter;
         }
@@ -66,12 +66,12 @@ void pru_spi_transferData(PruSpiStatus* status)
         }
 
         // clock up
-        __R30 |= 0x10;
+        __R30 |= 0x10; // 0x10 = 1 << CLK (bit 4)
 
-        __delay_cycles(2);
+        __delay_cycles(5);
     }
     status->misoData = miso;
     // deselect device
-    __R30 |= (1 << 10);
-    __delay_cycles(40);
+    __R30 |= (1 << 10); // 1 << CS (bit 10)
+    __delay_cycles(45);
 }
