@@ -17,8 +17,7 @@ typedef struct  {
     uint16_t misoData;
 } PruSpiStatus;
 
-void pru_spi_transferData(PruSpiStatus* status);
-inline void pru_spi_DelayCycles(uint8_t cycles);
+uint16_t pru_spi_read16(uint16_t status);
 
 
 

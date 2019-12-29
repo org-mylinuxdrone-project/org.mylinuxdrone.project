@@ -37,8 +37,6 @@ int main(void)
      */
     CT_CFG.SYSCFG_bit.STANDBY_INIT = 0;
 
-    PruSpiStatus spiStatus = {mosiData, misoData };
-
     CHECK = 0;
     ERROR = 0;
     while (1)
@@ -47,8 +45,7 @@ int main(void)
 //        PRU_CTRL.CYCLE = 0;
 //        PRU_CTRL.CTRL_bit.CTR_EN = 1;
         for (i = 0x80000000; i != 0; i = i >> 1){
-            pru_spi_transferData(&spiStatus);
-            RESULT = spiStatus.misoData;
+            RESULT = pru_spi_read16(0xF500);
             if(RESULT != 0x70) {
                 CHECK++;
                 ERROR = RESULT;

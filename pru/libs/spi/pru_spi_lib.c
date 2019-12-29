@@ -23,14 +23,13 @@
 volatile register uint32_t __R30;
 volatile register uint32_t __R31;
 
-void pru_spi_transferData(PruSpiStatus* status)
+uint16_t pru_spi_read16(uint16_t mosi)
 {
     //Set the CFG Register to direct output instead of serial output
     CT_CFG.GPCFG1 = 0;
 
 
     uint16_t miso = 0;
-    uint16_t mosi = status->mosiData;
     uint16_t counter = 0;
 
     // reset clock and select device
@@ -70,8 +69,8 @@ void pru_spi_transferData(PruSpiStatus* status)
 
         __delay_cycles(5);
     }
-    status->misoData = miso;
     // deselect device
     __R30 |= (1 << 10); // 1 << CS (bit 10)
-    __delay_cycles(45);
+    __delay_cycles(50);
+    return miso;
 }
