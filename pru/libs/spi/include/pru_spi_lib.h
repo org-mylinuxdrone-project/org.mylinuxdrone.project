@@ -12,14 +12,9 @@
 #define PRU_1MHZ_CPU_CYCLES 90
 #define PRU_20MHZ_CPU_CYCLES 5
 
-typedef struct  {
-    uint16_t mosiData;
-    uint16_t misoData;
-} PruSpiStatus;
-
 uint16_t pru_spi_read16(uint16_t status);
 uint32_t pru_spi_read32(uint32_t status);
-
+void pru_spi_transferData(uint16_t* mosiData, uint16_t* misoData, uint16_t length);
 
 
 #endif /* PRU_SPI_LIB_H_ */
