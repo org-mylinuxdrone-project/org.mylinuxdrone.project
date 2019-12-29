@@ -31,12 +31,16 @@ int main(void)
     PruSpiStatus spiStatus = {mosiData, misoData };
 
     mosiData[0] = 0xF500;
+    mosiData[1] = 0xF500;
+    mosiData[2] = 0xF500;
+    mosiData[3] = 0xF500;
+    mosiData[4] = 0xF500;
     CHECK = 0;
     ERROR = 0;
-    __delay_cycles(100);
     while (1)
     {
-        pru_spi_transferData(&spiStatus, 1);
+        __delay_cycles(100);
+        pru_spi_transferData(&spiStatus, 4);
         RESULT = spiStatus.misoData[0];
         if(RESULT != 0x70) {
             CHECK++;
