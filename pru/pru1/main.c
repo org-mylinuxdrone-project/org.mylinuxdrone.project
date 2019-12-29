@@ -21,6 +21,8 @@ uint16_t ERROR = 0x00;
 uint32_t COUNTER = 0x00;
 uint16_t mosiData = 0xF500;
 uint16_t misoData = 0x0;
+uint32_t RESULT32 = 0x00;
+uint32_t ADDRESS = 0xF5000000;
 
 
 /**
@@ -42,17 +44,25 @@ int main(void)
     while (1)
     {
         // enable counter
-//        PRU_CTRL.CYCLE = 0;
-//        PRU_CTRL.CTRL_bit.CTR_EN = 1;
+        PRU_CTRL.CYCLE = 0;
+        PRU_CTRL.CTRL_bit.CTR_EN = 1;
+//        for (i = 0x80000000; i != 0; i = i >> 1){
+//            RESULT = pru_spi_read16(0x7a00);
+//            if(RESULT != 0x70) {
+//                CHECK++;
+//                ERROR = RESULT;
+//            }
+//        }
         for (i = 0x80000000; i != 0; i = i >> 1){
-            RESULT = pru_spi_read16(0xF500);
+            RESULT32 = pru_spi_read32(ADDRESS);
+            RESULT = (RESULT32 >> 16) & 0x0000FFFF;
             if(RESULT != 0x70) {
                 CHECK++;
                 ERROR = RESULT;
             }
         }
-//        PRU_CTRL.CTRL_bit.CTR_EN = 0;
-//        COUNTER = PRU_CTRL.CYCLE;
+        PRU_CTRL.CTRL_bit.CTR_EN = 0;
+        COUNTER = PRU_CTRL.CYCLE;
     }
 }
 

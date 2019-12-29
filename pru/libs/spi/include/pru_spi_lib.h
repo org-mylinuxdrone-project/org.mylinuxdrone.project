@@ -18,6 +18,7 @@ typedef struct  {
 } PruSpiStatus;
 
 uint16_t pru_spi_read16(uint16_t status);
+uint32_t pru_spi_read32(uint32_t status);
 
 
 

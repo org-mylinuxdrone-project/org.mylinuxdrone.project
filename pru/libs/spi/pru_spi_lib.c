@@ -32,6 +32,9 @@ uint16_t pru_spi_read16(uint16_t mosi)
     uint16_t miso = 0;
     uint16_t counter = 0;
 
+    // alzo il bit 15 per 'lettura'
+    mosi |= 0x8000;
+
     // reset clock and select device
     __R30 |= (0x10); // 0x10 = 1 << CLK (bit 4)
     __R30 &= ~(1 << 10); // 1 << CS (bit 10)
@@ -72,5 +75,60 @@ uint16_t pru_spi_read16(uint16_t mosi)
     // deselect device
     __R30 |= (1 << 10); // 1 << CS (bit 10)
     __delay_cycles(50);
-    return miso;
+    return miso & 0x00FF; // scarto primo byte
+}
+
+uint32_t pru_spi_read32(uint32_t mosi)
+{
+    //Set the CFG Register to direct output instead of serial output
+    CT_CFG.GPCFG1 = 0;
+
+
+    uint32_t miso = 0;
+    uint32_t counter = 0;
+
+    // alzo il bit 31 per 'lettura'
+    mosi |= 0x80000000;
+
+    // reset clock and select device
+    __R30 |= (0x10); // 0x10 = 1 << CLK (bit 4)
+    __R30 &= ~(1 << 10); // 1 << CS (bit 10)
+
+    // transfer byte
+    for (counter = 0x80000000; counter != 0; counter = counter >> 1)
+    {
+
+        // clock down
+        __R30 &= ~(0x10); // 0x10 = 1 << CLK (bit 4)
+
+        // transfer mosi bit
+        if ((mosi & counter))
+        {
+            __R30 |= 0x80;
+        }
+        else
+        {
+            __R30 &= ~(0x80);
+        }
+        __delay_cycles(5);
+
+        // read miso bit
+        if (__R31 & 0x100) // 0x100 = 1 << MISO (bit 7)
+        {
+            miso |= counter;
+        }
+        else
+        {
+            miso &= ~(counter);
+        }
+
+        // clock up
+        __R30 |= 0x10; // 0x10 = 1 << CLK (bit 4)
+
+        __delay_cycles(5);
+    }
+    // deselect device
+    __R30 |= (1 << 10); // 1 << CS (bit 10)
+    __delay_cycles(50);
+    return miso & 0x00FFFFFF; // scarto primo byte
 }
