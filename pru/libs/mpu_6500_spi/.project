@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>spi_lib</name>
+	<name>mpu_6500_spi_lib</name>
 	<comment></comment>
 	<projects>
 	</projects>

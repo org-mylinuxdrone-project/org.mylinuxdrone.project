@@ -20,20 +20,24 @@
 #include <pru_spi_lib.h>
 #include <pru_cfg.h>
 
+#define MOSI    7       //P8_40
+#define CLK     4       //P8_41
+#define MISO    8       //P8_27
+#define CS      10      //P8_28
+
 volatile register uint32_t __R30;
 volatile register uint32_t __R31;
 
-uint16_t pru_spi_read16(uint16_t mosi)
+uint8_t pru_spi_read8(uint8_t address)
 {
+    // alzo il bit 15 per 'lettura'
+    uint16_t mosi = ((address | 0x80) << 8);
     //Set the CFG Register to direct output instead of serial output
     CT_CFG.GPCFG1 = 0;
 
 
     uint16_t miso = 0;
     uint16_t counter = 0;
-
-    // alzo il bit 15 per 'lettura'
-    mosi |= 0x8000;
 
     // reset clock and select device
     __R30 |= (0x10); // 0x10 = 1 << CLK (bit 4)
@@ -74,21 +78,56 @@ uint16_t pru_spi_read16(uint16_t mosi)
     }
     // deselect device
     __R30 |= (1 << 10); // 1 << CS (bit 10)
-    __delay_cycles(50);
-    return miso & 0x00FF; // scarto primo byte
+    __delay_cycles(60);
+    return miso; // scarto primo byte
 }
+void pru_spi_write8(uint8_t address, uint8_t value) {
+    uint16_t mosi = ((address & ~(0x80)) << 8 | value);
+    uint16_t counter = 0;
 
-uint32_t pru_spi_read32(uint32_t mosi)
+    // reset clock and select device
+    __R30 |= (0x10); // 0x10 = 1 << CLK (bit 4)
+    __R30 &= ~(1 << 10); // 1 << CS (bit 10)
+
+    // transfer byte
+    for (counter = 0x8000; counter != 0; counter = counter >> 1)
+    {
+
+        // clock down
+        __R30 &= ~(0x10); // 0x10 = 1 << CLK (bit 4)
+
+        // transfer mosi bit
+        if ((mosi & counter))
+        {
+            __R30 |= 0x80;
+        }
+        else
+        {
+            __R30 &= ~(0x80);
+        }
+        __delay_cycles(100);
+
+        // clock up
+        __R30 |= 0x10; // 0x10 = 1 << CLK (bit 4)
+
+        __delay_cycles(100);
+    }
+    // deselect device
+    __R30 |= (1 << 10); // 1 << CS (bit 10)
+    __delay_cycles(60);
+}
+uint16_t pru_spi_read16(uint8_t address)
 {
+    // alzo il bit 31 per 'lettura'
+    uint32_t mosi = (address | 0x80);
+    mosi = (mosi << 24) & 0xFF000000;
+
     //Set the CFG Register to direct output instead of serial output
     CT_CFG.GPCFG1 = 0;
 
 
     uint32_t miso = 0;
     uint32_t counter = 0;
-
-    // alzo il bit 31 per 'lettura'
-    mosi |= 0x80000000;
 
     // reset clock and select device
     __R30 |= (0x10); // 0x10 = 1 << CLK (bit 4)
@@ -129,12 +168,15 @@ uint32_t pru_spi_read32(uint32_t mosi)
     }
     // deselect device
     __R30 |= (1 << 10); // 1 << CS (bit 10)
-    __delay_cycles(50);
-    return miso & 0x00FFFFFF; // scarto primo byte
+    __delay_cycles(60);
+    return miso; // scarto primi due byte
 }
 
-void pru_spi_transferData(uint16_t* mosiData, uint16_t* misoData, uint16_t length)
+int8_t pru_spi_readData(uint16_t* mosiData, uint16_t* misoData, uint16_t length)
 {
+    // spi read operation: alzo il bit 15 del primo mosiData (address)
+    mosiData[0] = (mosiData[0]|0x8000);
+
     //Set the CFG Register to direct output instead of serial output
     CT_CFG.GPCFG1 = 0;
 
@@ -190,7 +232,7 @@ void pru_spi_transferData(uint16_t* mosiData, uint16_t* misoData, uint16_t lengt
 
     // deselect device
     __R30 |= (1 << 10); // 1 << CS (bit 10)
-    __delay_cycles(50);
-
+    __delay_cycles(60);
+    return 0;
 }
 

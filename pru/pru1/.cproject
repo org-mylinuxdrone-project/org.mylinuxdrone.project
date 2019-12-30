@@ -46,12 +46,12 @@
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../pru-software-support-package/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../pru-software-support-package/include/am335x"/>
-									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/spi/include"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/mpu_6500_spi/include"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.ENDIAN.1054076163" name="Specify the endianness of both code and data [See 'General' page to edit] (--endian)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.ENDIAN" useByScannerDiscovery="false" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.ENDIAN.little" valueType="enumerated"/>
-								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_LEVEL.1990140293" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_LEVEL" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_LEVEL.1" valueType="enumerated"/>
+								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_LEVEL.1990140293" name="Optimization level (--opt_level, -O)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_LEVEL" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_LEVEL.1" valueType="enumerated"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__C_SRCS.6896183" name="C Sources" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__C_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__CPP_SRCS.553052946" name="C++ Sources" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__CPP_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__ASM_SRCS.1779276062" name="Assembly Sources" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__ASM_SRCS"/>
@@ -68,11 +68,13 @@
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.SEARCH_PATH.1928666593" name="Add &lt;dir&gt; to library search path (--search_path, -i)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.SEARCH_PATH" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/lib"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
-									<listOptionValue builtIn="false" value="&quot;${PROJECT_ROOT}/../libs/spi/Debug&quot;"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/mpu_6500_spi/Debug"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/spi/Debug"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.LIBRARY.1085039519" name="Include library file or command file as input (--library, -l)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.LIBRARY" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="libc.a"/>
-									<listOptionValue builtIn="false" value="pru_spi.lib"/>
+									<listOptionValue builtIn="false" value="pru_mpu_6500_spi_lib.lib"/>
+									<listOptionValue builtIn="false" value="pru_spi_lib.lib"/>
 								</option>
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.exeLinker.inputType__CMD_SRCS.1851209625" name="Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.exeLinker.inputType__CMD_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.exeLinker.inputType__CMD2_SRCS.87726076" name="Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.exeLinker.inputType__CMD2_SRCS"/>
