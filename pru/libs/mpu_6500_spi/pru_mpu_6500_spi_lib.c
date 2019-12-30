@@ -72,7 +72,6 @@ int8_t mpu_6500_spi_init() {
 int8_t mpu_6500_spi_get_data(int16_t* acc, int16_t* gyro, int16_t* temp) {
 
     int8_t result = 0;
-    int32_t appTemp = 0;
 
     // load acc raw data
     mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_ACCEL_RAW_REGISTER -1) << 8 ; // result start at position 1 on miso buffer
@@ -86,11 +85,14 @@ int8_t mpu_6500_spi_get_data(int16_t* acc, int16_t* gyro, int16_t* temp) {
      * TEMP_degC = ((TEMP_OUT –RoomTemp_Offset)/Temp_Sensitivity)+ 21degC
      * es. (1961 - 0)/333.87 + 21 = 26,87
      *
-     * 333,87*2^8 = 85470
-     * (21 + 0,55) * 2^8 = 5516
+     * Se si vuole restituire in gradi centigradi, questo è il modo:
+     *
+     * Considerare che 333,87*2^8 = 85470 e che (21 + 0,55) * 2^8 = 5516, si effettua il conto in virgola fissa (8 bit)
+     *     int32_t appTemp = 0;
+     *     appTemp = pru_spi_read16(MPU_6500_SPI_TEMP_RAW_REGISTER -1) << 16;
+     *     *temp  = (((appTemp / 85470) + 5516) >> 8);
      */
-    appTemp = pru_spi_read16(MPU_6500_SPI_TEMP_RAW_REGISTER -1) << 16;
-    *temp  = (((appTemp / 85470) + 5516) >> 8);
+      *temp = pru_spi_read16(MPU_6500_SPI_TEMP_RAW_REGISTER -1);
 
     // load gyro raw data
     mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_GYRO_RAW_REGISTER -1) << 8 ; // result start at position 1 on miso buffer
