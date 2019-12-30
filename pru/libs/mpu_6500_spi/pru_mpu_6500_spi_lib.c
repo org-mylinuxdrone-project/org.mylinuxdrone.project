@@ -36,27 +36,8 @@
 #define MPU_6500_SPI_INT_ENABLE_REGISTER    56
 #define MPU_6500_SPI_INT_STATUS_REGISTER    58
 
-uint16_t mpu_6500_spi_miso_buffer[32] = {};
-uint16_t mpu_6500_spi_mosi_buffer[32] = {};
-
-int16_t mpu_6500_spi_acc_axis_offset[3] = {};
-int16_t mpu_6500_spi_gyro_axis_offset[3] = {};
-
-uint8_t mpu_6500_spi_conf_reg = 0;
-uint8_t mpu_6500_spi_gyro_conf_reg = 0;
-uint8_t mpu_6500_spi_acc_conf1_reg = 0;
-uint8_t mpu_6500_spi_acc_conf2_reg = 0;
-uint8_t mpu_6500_spi_acc_low_power_reg = 0;
-uint8_t mpu_6500_spi_fifo_enabled_reg = 0;
-uint8_t mpu_6500_spi_interrupt_enabled_reg = 0;
-uint8_t mpu_6500_spi_interrupt_status_reg = 0;
-uint8_t mpu_6500_spi_acc_int_ctrl_reg = 0;
-uint8_t mpu_6500_spi_usr_ctrl_reg = 0;
-uint8_t mpu_6500_spi_pwr_mgmt1_reg = 0;
-uint8_t mpu_6500_spi_pwr_mgmt2_reg = 0;
-
-int16_t mpu_6500_spi_acc_axis_raw[3] = {};
-int16_t mpu_6500_spi_gyro_axis_raw[3] = {};
+uint16_t mpu_6500_spi_miso_buffer[6] = {};
+uint16_t mpu_6500_spi_mosi_buffer[6] = {};
 
 int8_t mpu_6500_spi_init() {
     // set Configuration Register
@@ -83,16 +64,19 @@ int8_t mpu_6500_spi_init() {
     // set Int Status Register
     pru_spi_write8(MPU_6500_SPI_INT_STATUS_REGISTER, 0x00); // reset all interrupts?
 
-    return mpu_6500_spi_loadConfigurations();
+    // usato solo per test e verifiche
+//    return mpu_6500_spi_loadConfigurations();
+    return 0;
 }
 
 int8_t mpu_6500_spi_get_data(int16_t* acc, int16_t* gyro, int16_t* temp) {
 
     int8_t result = 0;
     int32_t appTemp = 0;
+
+    // load acc raw data
     mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_ACCEL_RAW_REGISTER -1) << 8 ; // result start at position 1 on miso buffer
     result = pru_spi_readData(mpu_6500_spi_mosi_buffer, mpu_6500_spi_miso_buffer, 4);
-    // load acc raw data
     acc[0] = mpu_6500_spi_miso_buffer[1];
     acc[1] = mpu_6500_spi_miso_buffer[2];
     acc[2] = mpu_6500_spi_miso_buffer[3];
@@ -108,70 +92,13 @@ int8_t mpu_6500_spi_get_data(int16_t* acc, int16_t* gyro, int16_t* temp) {
     appTemp = pru_spi_read16(MPU_6500_SPI_TEMP_RAW_REGISTER -1) << 16;
     *temp  = (((appTemp / 85470) + 5516) >> 8);
 
+    // load gyro raw data
     mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_GYRO_RAW_REGISTER -1) << 8 ; // result start at position 1 on miso buffer
     result = pru_spi_readData(mpu_6500_spi_mosi_buffer, mpu_6500_spi_miso_buffer, 4);
-    // load gyro raw data
     gyro[0] = mpu_6500_spi_miso_buffer[1];
     gyro[1] = mpu_6500_spi_miso_buffer[2];
     gyro[2] = mpu_6500_spi_miso_buffer[3];
     return result;
-}
-
-int8_t mpu_6500_spi_loadConfigurations() {
-    // read configuration
-    mpu_6500_spi_conf_reg = pru_spi_read8(MPU_6500_SPI_CONF_REGISTER);
-    __delay_cycles(10);
-
-    // read gyro configuration
-    mpu_6500_spi_gyro_conf_reg = pru_spi_read8(MPU_6500_SPI_GYRO_CONF_REGISTER);
-    __delay_cycles(10);
-
-    // read acc configuration 1
-    mpu_6500_spi_acc_conf1_reg = pru_spi_read8(MPU_6500_SPI_ACC_CONF1_REGISTER);
-    __delay_cycles(10);
-
-    // read acc configuration 2
-    mpu_6500_spi_acc_conf2_reg = pru_spi_read8(MPU_6500_SPI_ACC_CONF2_REGISTER);
-    __delay_cycles(10);
-
-    // read interrupt enabled conf
-    mpu_6500_spi_interrupt_enabled_reg = pru_spi_read8(MPU_6500_SPI_INT_ENABLE_REGISTER);
-    __delay_cycles(10);
-
-    // read interrupt status
-    mpu_6500_spi_interrupt_status_reg = pru_spi_read8(MPU_6500_SPI_INT_STATUS_REGISTER);
-    __delay_cycles(10);
-
-    // read power management 1
-    mpu_6500_spi_pwr_mgmt1_reg = pru_spi_read8(MPU_6500_SPI_PWR_MGMT1_REGISTER);
-    __delay_cycles(10);
-
-    // read power management 2
-    mpu_6500_spi_pwr_mgmt2_reg = pru_spi_read8(MPU_6500_SPI_PWR_MGMT2_REGISTER);
-    __delay_cycles(10);
-
-    return mpu_6500_spi_loadOffsets();
-}
-
-int8_t mpu_6500_spi_loadOffsets() {
-    // read accel offsets
-    mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_ACC_OFFSET_REGISTER -1) << 8 ; // result start at position 1 on miso buffer
-    if(pru_spi_readData(mpu_6500_spi_mosi_buffer, mpu_6500_spi_miso_buffer, 4)) {
-        return -1;
-    }
-    mpu_6500_spi_acc_axis_offset[X_AXIS] = mpu_6500_spi_miso_buffer[1];
-    mpu_6500_spi_acc_axis_offset[Y_AXIS] = mpu_6500_spi_miso_buffer[2];
-    mpu_6500_spi_acc_axis_offset[Z_AXIS] = mpu_6500_spi_miso_buffer[3];
-
-    mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_GYRO_OFFSET_REGISTER -1) << 8 ; // result start at position 1 on miso buffer
-    if(pru_spi_readData(mpu_6500_spi_mosi_buffer, mpu_6500_spi_miso_buffer, 4)) {
-        return -1;
-    }
-    // load gyro offsets
-    mpu_6500_spi_gyro_axis_offset[X_AXIS] = mpu_6500_spi_miso_buffer[1];
-    mpu_6500_spi_gyro_axis_offset[Y_AXIS] = mpu_6500_spi_miso_buffer[2];
-    mpu_6500_spi_gyro_axis_offset[Z_AXIS] = mpu_6500_spi_miso_buffer[3];
-    return 0;
 }
 
 int8_t mpu_6500_spi_testConnection(){
