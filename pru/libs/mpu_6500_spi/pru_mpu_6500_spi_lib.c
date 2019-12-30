@@ -88,16 +88,8 @@ int8_t mpu_6500_spi_init() {
 
 int8_t mpu_6500_spi_get_data(int16_t* acc, int16_t* gyro, int16_t* temp) {
 
-//    // Rileggo i dati per prova ..
-//    mpu_6500_spi_acc_axis_raw[0] = pru_spi_read16(59);
-//    mpu_6500_spi_acc_axis_raw[1] = pru_spi_read16(61);
-//    mpu_6500_spi_acc_axis_raw[2] = pru_spi_read16(63);
-//
-//    mpu_6500_spi_gyro_axis_raw[0] = pru_spi_read16(67);
-//    mpu_6500_spi_gyro_axis_raw[1] = pru_spi_read16(69);
-//    mpu_6500_spi_gyro_axis_raw[2] = pru_spi_read16(71);
-
     int8_t result = 0;
+    int32_t appTemp = 0;
     mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_ACCEL_RAW_REGISTER -1) << 8 ; // result start at position 1 on miso buffer
     result = pru_spi_readData(mpu_6500_spi_mosi_buffer, mpu_6500_spi_miso_buffer, 4);
     // load acc raw data
@@ -106,8 +98,15 @@ int8_t mpu_6500_spi_get_data(int16_t* acc, int16_t* gyro, int16_t* temp) {
     acc[2] = mpu_6500_spi_miso_buffer[3];
 
     // read temperature raw
-    *temp = pru_spi_read16(MPU_6500_SPI_TEMP_RAW_REGISTER -1);
-    __delay_cycles(10);
+    /*
+     * TEMP_degC = ((TEMP_OUT –RoomTemp_Offset)/Temp_Sensitivity)+ 21degC
+     * es. (1961 - 0)/333.87 + 21 = 26,87
+     *
+     * 333,87*2^8 = 85470
+     * (21 + 0,55) * 2^8 = 5516
+     */
+    appTemp = pru_spi_read16(MPU_6500_SPI_TEMP_RAW_REGISTER -1) << 16;
+    *temp  = (((appTemp / 85470) + 5516) >> 8);
 
     mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_GYRO_RAW_REGISTER -1) << 8 ; // result start at position 1 on miso buffer
     result = pru_spi_readData(mpu_6500_spi_mosi_buffer, mpu_6500_spi_miso_buffer, 4);
