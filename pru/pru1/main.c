@@ -74,7 +74,7 @@ int main(void)
     }
     __delay_cycles(1000);
 
-    if(mpu_6500_spi_calc_offsets(MPU_INT)) {
+    if(mpu_6500_spi_calc_gyro_bias(MPU_INT)) {
         CHECK++;
         ERROR = 3;
     }
