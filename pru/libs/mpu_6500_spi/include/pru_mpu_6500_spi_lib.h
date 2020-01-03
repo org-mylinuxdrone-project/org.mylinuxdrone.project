@@ -41,6 +41,7 @@ int8_t mpu_6500_spi_loadOffsets();
 int8_t mpu_6500_spi_loadConfigurations();
 
 int8_t mpu_6500_spi_get_data(int16_t* acc, int16_t* gyro, int16_t* temp);
+int8_t mpu_6500_spi_calc_offsets(uint8_t interruptPin);
 
 int8_t mpu_6500_spi_start();
 int8_t mpu_6500_spi_stop();

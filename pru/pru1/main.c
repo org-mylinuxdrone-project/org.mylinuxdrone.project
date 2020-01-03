@@ -73,26 +73,21 @@ int main(void)
         ERROR = 2;
     }
     __delay_cycles(1000);
-//    while(mpu_6500_spi_start()) {
-//        CHECK++;
-//        ERROR = 3;
-//    }
+
+    if(mpu_6500_spi_calc_offsets(MPU_INT)) {
+        CHECK++;
+        ERROR = 3;
+    }
+
     while (1)
     {
         if(__R31 & (1 << MPU_INT)) {
             if(mpu_6500_spi_get_data(acc_axis_raw, gyro_axis_raw, &temp_raw)) {
                 CHECK++;
-                ERROR = 3;
+                ERROR = 4;
                 continue;
             }
         }
-//        __delay_cycles(50);
-//        RESULT = mpu_6500_spi_read_register(26);
-//        if(RESULT != 7) {
-//            CHECK++;
-//            ERROR = 4;
-//            continue;
-//        }
     }
 }
 
