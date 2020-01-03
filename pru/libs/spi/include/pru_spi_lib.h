@@ -28,6 +28,7 @@
 
 uint8_t pru_spi_read8(uint8_t address);
 void pru_spi_write8(uint8_t address, uint8_t value);
+void pru_spi_write16(uint8_t address, uint16_t value);
 uint16_t pru_spi_read16(uint8_t address);
 int8_t pru_spi_readData(uint16_t* mosiData, uint16_t* misoData, uint16_t length);
 

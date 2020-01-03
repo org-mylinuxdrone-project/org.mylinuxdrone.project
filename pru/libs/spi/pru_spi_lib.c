@@ -81,6 +81,7 @@ uint8_t pru_spi_read8(uint8_t address)
     __delay_cycles(60);
     return miso; // scarto primo byte
 }
+
 void pru_spi_write8(uint8_t address, uint8_t value) {
     uint16_t mosi = ((address & ~(0x80)) << 8 | value);
     uint16_t counter = 0;
@@ -116,6 +117,43 @@ void pru_spi_write8(uint8_t address, uint8_t value) {
     __R30 |= (1 << 10); // 1 << CS (bit 10)
     __delay_cycles(60);
 }
+
+void pru_spi_write16(uint8_t address, uint16_t value) {
+    uint32_t mosi = (((address & ~(0x80)) << 24) | (value << 8));
+    uint32_t counter = 0;
+
+    // reset clock and select device
+    __R30 |= (0x10); // 0x10 = 1 << CLK (bit 4)
+    __R30 &= ~(1 << 10); // 1 << CS (bit 10)
+
+    // transfer 24 bits
+    for (counter = 0x80000000; counter != 0x80; counter = counter >> 1)
+    {
+
+        // clock down
+        __R30 &= ~(0x10); // 0x10 = 1 << CLK (bit 4)
+
+        // transfer mosi bit
+        if ((mosi & counter))
+        {
+            __R30 |= 0x80;
+        }
+        else
+        {
+            __R30 &= ~(0x80);
+        }
+        __delay_cycles(100);
+
+        // clock up
+        __R30 |= 0x10; // 0x10 = 1 << CLK (bit 4)
+
+        __delay_cycles(100);
+    }
+    // deselect device
+    __R30 |= (1 << 10); // 1 << CS (bit 10)
+    __delay_cycles(60);
+}
+
 uint16_t pru_spi_read16(uint8_t address)
 {
     // alzo il bit 31 per 'lettura'

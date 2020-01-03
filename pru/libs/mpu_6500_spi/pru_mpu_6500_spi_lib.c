@@ -21,23 +21,46 @@
 #include <pru_mpu_6500_spi_lib.h>
 #include <pru_spi_lib.h>
 
-#define MPU_6500_SPI_WHOAMI_REGISTER       117
-#define MPU_6500_SPI_ACC_OFFSET_REGISTER   119
-#define MPU_6500_SPI_GYRO_OFFSET_REGISTER   19
-#define MPU_6500_SPI_ACCEL_RAW_REGISTER     59
-#define MPU_6500_SPI_TEMP_RAW_REGISTER      65
-#define MPU_6500_SPI_GYRO_RAW_REGISTER      67
-#define MPU_6500_SPI_CONF_REGISTER          26
-#define MPU_6500_SPI_GYRO_CONF_REGISTER     27
-#define MPU_6500_SPI_ACC_CONF1_REGISTER     28
-#define MPU_6500_SPI_ACC_CONF2_REGISTER     29
-#define MPU_6500_SPI_PWR_MGMT1_REGISTER    107
-#define MPU_6500_SPI_PWR_MGMT2_REGISTER    108
-#define MPU_6500_SPI_INT_ENABLE_REGISTER    56
-#define MPU_6500_SPI_INT_STATUS_REGISTER    58
+#define MPU_6500_SPI_WHOAMI_REGISTER              117
+#define MPU_6500_SPI_ACC_OFFSET_REGISTER          119
+#define MPU_6500_SPI_GYRO_OFFSET_REGISTER_X_H      19
+#define MPU_6500_SPI_GYRO_OFFSET_REGISTER_X_L      20
+#define MPU_6500_SPI_GYRO_OFFSET_REGISTER_Y_H      21
+#define MPU_6500_SPI_GYRO_OFFSET_REGISTER_Y_L      22
+#define MPU_6500_SPI_GYRO_OFFSET_REGISTER_Z_H      23
+#define MPU_6500_SPI_GYRO_OFFSET_REGISTER_Z_L      24
+#define MPU_6500_SPI_ACC_OFFSET_REGISTER_X_H      119
+#define MPU_6500_SPI_ACC_OFFSET_REGISTER_X_L      120
+#define MPU_6500_SPI_ACC_OFFSET_REGISTER_Y_H      122
+#define MPU_6500_SPI_ACC_OFFSET_REGISTER_Y_L      123
+#define MPU_6500_SPI_ACC_OFFSET_REGISTER_Z_H      125
+#define MPU_6500_SPI_ACC_OFFSET_REGISTER_Z_L      126
+#define MPU_6500_SPI_ACCEL_RAW_REGISTER            59
+#define MPU_6500_SPI_TEMP_RAW_REGISTER             65
+#define MPU_6500_SPI_GYRO_RAW_REGISTER             67
+#define MPU_6500_SPI_CONF_REGISTER                 26
+#define MPU_6500_SPI_GYRO_CONF_REGISTER            27
+#define MPU_6500_SPI_ACC_CONF1_REGISTER            28
+#define MPU_6500_SPI_ACC_CONF2_REGISTER            29
+#define MPU_6500_SPI_PWR_MGMT1_REGISTER           107
+#define MPU_6500_SPI_PWR_MGMT2_REGISTER           108
+#define MPU_6500_SPI_INT_ENABLE_REGISTER           56
+#define MPU_6500_SPI_INT_STATUS_REGISTER           58
 
 uint16_t mpu_6500_spi_miso_buffer[6] = {};
 uint16_t mpu_6500_spi_mosi_buffer[6] = {};
+
+int32_t mpu_6500_spi_gyro_accumulate[3] = {};
+int32_t mpu_6500_spi_acc_accumulate[3] = {};
+
+int32_t mpu_6500_spi_gyro_offset[3] = {};
+int32_t mpu_6500_spi_acc_offset[3] = {};
+
+int32_t mpu_6500_spi_gyro_offset_reload[3] = {};
+int32_t mpu_6500_spi_acc_offset_reload[3] = {};
+
+uint16_t mpu_6500_spi_calib_counter = 2048;
+uint16_t mpu_6500_spi_discard_counter = 2048;
 
 int8_t mpu_6500_spi_init() {
     // set Configuration Register
@@ -64,8 +87,13 @@ int8_t mpu_6500_spi_init() {
     // set Int Status Register
     pru_spi_write8(MPU_6500_SPI_INT_STATUS_REGISTER, 0x00); // reset all interrupts?
 
-    // usato solo per test e verifiche
-//    return mpu_6500_spi_loadConfigurations();
+    mpu_6500_spi_gyro_accumulate[0] = 0;
+    mpu_6500_spi_gyro_accumulate[1] = 0;
+    mpu_6500_spi_gyro_accumulate[2] = 0;
+    mpu_6500_spi_acc_accumulate[0] = 0;
+    mpu_6500_spi_acc_accumulate[1] = 0;
+    mpu_6500_spi_acc_accumulate[2] = 0;
+
     return 0;
 }
 
@@ -100,6 +128,64 @@ int8_t mpu_6500_spi_get_data(int16_t* acc, int16_t* gyro, int16_t* temp) {
     gyro[0] = mpu_6500_spi_miso_buffer[1];
     gyro[1] = mpu_6500_spi_miso_buffer[2];
     gyro[2] = mpu_6500_spi_miso_buffer[3];
+
+    if(mpu_6500_spi_calib_counter == 0) {
+        return result;
+    } else
+    if(mpu_6500_spi_discard_counter == 0) {
+            mpu_6500_spi_calib_counter--;
+            mpu_6500_spi_gyro_accumulate[0] += gyro[0];
+            mpu_6500_spi_gyro_accumulate[1] += gyro[1];
+            mpu_6500_spi_gyro_accumulate[2] += gyro[2];
+            mpu_6500_spi_acc_accumulate[0] += acc[0];
+            mpu_6500_spi_acc_accumulate[1] += acc[1];
+            mpu_6500_spi_acc_accumulate[2] += acc[2];
+            if(mpu_6500_spi_calib_counter == 0) {
+                mpu_6500_spi_gyro_offset[0] = mpu_6500_spi_gyro_accumulate[0] >> 11;
+                mpu_6500_spi_gyro_offset[1] = mpu_6500_spi_gyro_accumulate[1] >> 11;
+                mpu_6500_spi_gyro_offset[2] = mpu_6500_spi_gyro_accumulate[2] >> 11;
+                mpu_6500_spi_acc_offset[0] = mpu_6500_spi_acc_accumulate[0] >> 11;
+                mpu_6500_spi_acc_offset[1] = mpu_6500_spi_acc_accumulate[1] >> 11;
+                mpu_6500_spi_acc_offset[2] = mpu_6500_spi_acc_accumulate[2] >> 11;
+
+                // Assegno offsets gyro
+                mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_GYRO_OFFSET_REGISTER_X_H -1) << 8 ; // result start at position 1 on miso buffer
+                result = pru_spi_readData(mpu_6500_spi_mosi_buffer, mpu_6500_spi_miso_buffer, 4);
+                mpu_6500_spi_gyro_offset[0] += mpu_6500_spi_miso_buffer[1];
+                mpu_6500_spi_gyro_offset[1] += mpu_6500_spi_miso_buffer[2];
+                mpu_6500_spi_gyro_offset[2] += mpu_6500_spi_miso_buffer[3];
+
+                // Assegno offsets accel
+                mpu_6500_spi_acc_offset[0] += pru_spi_read16(MPU_6500_SPI_ACC_OFFSET_REGISTER_X_H -1);
+                mpu_6500_spi_acc_offset[1] += pru_spi_read16(MPU_6500_SPI_ACC_OFFSET_REGISTER_Y_H -1);
+                mpu_6500_spi_acc_offset[2] += pru_spi_read16(MPU_6500_SPI_ACC_OFFSET_REGISTER_Z_H -1);
+
+                // Assegno registri offset gyro
+                pru_spi_write16(MPU_6500_SPI_GYRO_OFFSET_REGISTER_X_H, mpu_6500_spi_gyro_offset[0]);
+                pru_spi_write16(MPU_6500_SPI_GYRO_OFFSET_REGISTER_Y_H, mpu_6500_spi_gyro_offset[1]);
+                pru_spi_write16(MPU_6500_SPI_GYRO_OFFSET_REGISTER_Z_H, mpu_6500_spi_gyro_offset[2]);
+
+                // Assegno registri offset gyro
+                pru_spi_write16(MPU_6500_SPI_ACC_OFFSET_REGISTER_X_H, mpu_6500_spi_acc_offset[0]);
+                pru_spi_write16(MPU_6500_SPI_ACC_OFFSET_REGISTER_Y_H, mpu_6500_spi_acc_offset[1]);
+                pru_spi_write16(MPU_6500_SPI_ACC_OFFSET_REGISTER_Z_H, mpu_6500_spi_acc_offset[2]);
+
+                // Solo per test ricarico i valori (da togliere)
+                // Assegno offsets reload gyro
+                mpu_6500_spi_mosi_buffer[0] = (MPU_6500_SPI_GYRO_OFFSET_REGISTER_X_H -1) << 8 ; // result start at position 1 on miso buffer
+                result = pru_spi_readData(mpu_6500_spi_mosi_buffer, mpu_6500_spi_miso_buffer, 4);
+                mpu_6500_spi_gyro_offset_reload[0] = mpu_6500_spi_miso_buffer[1];
+                mpu_6500_spi_gyro_offset_reload[1] = mpu_6500_spi_miso_buffer[2];
+                mpu_6500_spi_gyro_offset_reload[2] = mpu_6500_spi_miso_buffer[3];
+
+                // Assegno offsets reload accel
+                mpu_6500_spi_acc_offset_reload[0] = pru_spi_read16(MPU_6500_SPI_ACC_OFFSET_REGISTER_X_H -1);
+                mpu_6500_spi_acc_offset_reload[1] = pru_spi_read16(MPU_6500_SPI_ACC_OFFSET_REGISTER_Y_H -1);
+                mpu_6500_spi_acc_offset_reload[2] = pru_spi_read16(MPU_6500_SPI_ACC_OFFSET_REGISTER_Z_H -1);
+            }
+    } else {
+        mpu_6500_spi_discard_counter--;
+    }
     return result;
 }
 
