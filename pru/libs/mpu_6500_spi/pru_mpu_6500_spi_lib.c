@@ -136,7 +136,7 @@ int8_t mpu_6500_spi_calc_gyro_bias(uint8_t interruptPin)
     }
 
     // calcolo gyro offset
-    mpu_6500_spi_gyro_offset[0] = -(gyro_accumulate[0] >> 13); // TODO: >> 13 invece che >> 11 perché (forse) gli offset sono espressi con senstivity di 1000deg/s (32.8 LSB/deg/sec)
+    mpu_6500_spi_gyro_offset[0] = -(gyro_accumulate[0] >> 13); // TODO: perchè '>> 13' invece che '>> 11'?
     mpu_6500_spi_gyro_offset[1] = -(gyro_accumulate[1] >> 13);
     mpu_6500_spi_gyro_offset[2] = -(gyro_accumulate[2] >> 13);
 
