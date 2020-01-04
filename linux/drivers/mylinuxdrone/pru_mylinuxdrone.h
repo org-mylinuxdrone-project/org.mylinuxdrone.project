@@ -1,0 +1,1 @@
+../../../pru/pru0/include/pru_scratchpad.h
