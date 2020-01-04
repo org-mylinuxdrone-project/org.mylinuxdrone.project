@@ -16,6 +16,7 @@
 *.hpp    text
 *.dts    text
 *.cmd    text 
+*.sci    text 
 
 *.sh     text eol=lf
 
@@ -29,4 +30,5 @@
 *.out    binary
 *.lib    binary
 *.a      binary
+*.png    binary
 
