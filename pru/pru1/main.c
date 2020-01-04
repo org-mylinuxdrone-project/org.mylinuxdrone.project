@@ -197,14 +197,14 @@ int main(void)
             {
                 if (rc_receiver_extract_Data(RC_BUFFER))
                 {
-                    pru0_data_struct->rc.throttle = RC_BUFFER[2] / 100;
-                    pru0_data_struct->rc.yaw = RC_BUFFER[4] / 100;
-                    pru0_data_struct->rc.pitch = RC_BUFFER[3] / 100;
-                    pru0_data_struct->rc.roll = RC_BUFFER[1] / 100;
-                    pru0_data_struct->rc.aux1 = RC_BUFFER[6] / 100;
-                    pru0_data_struct->rc.aux2 = RC_BUFFER[5] / 100;
-                    pru0_data_struct->rc.aux3 = RC_BUFFER[7] / 100;
-                    pru0_data_struct->rc.aux4 = RC_BUFFER[8] / 100;
+                    pru0_data_struct->rc.throttle = RC_BUFFER[2] >> 7;
+                    pru0_data_struct->rc.yaw = RC_BUFFER[4] >> 7;
+                    pru0_data_struct->rc.pitch = RC_BUFFER[3] >> 7;
+                    pru0_data_struct->rc.roll = RC_BUFFER[1] >> 7;
+                    pru0_data_struct->rc.aux1 = RC_BUFFER[6] >> 7;
+                    pru0_data_struct->rc.aux2 = RC_BUFFER[5] >> 7;
+                    pru0_data_struct->rc.aux3 = RC_BUFFER[7] >> 7;
+                    pru0_data_struct->rc.aux4 = RC_BUFFER[8] >> 7;
                     SEND_DATA_TO_P0(RC_DATA_MSG_TYPE);
                 }
             }

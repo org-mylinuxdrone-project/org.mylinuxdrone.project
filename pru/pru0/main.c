@@ -3,8 +3,13 @@
 #include <pru_intc.h>
 #include <resource_table.h>
 #include <pru_rpmsg.h>
+#include <prb_pwmss.h>
+#include <prb_motors_utils.h>
 
 #define VIRTIO_CONFIG_S_DRIVER_OK  4
+#define PWMSS_DEVICE_FRONT 0
+#define PWMSS_DEVICE_REAR 2
+
 volatile register uint32_t __R30;
 volatile register uint32_t __R31;
 
@@ -15,6 +20,8 @@ unsigned char received_pru1_data[sizeof(PrbMessageType)] = { '\0' };
 PrbMessageType* received_pru1_data_struct = (PrbMessageType*) received_pru1_data;
 PrbMessageType* received_arm_data_struct = (PrbMessageType*) received_arm_data;
 int counter32 = 0;
+uint8_t pru_rpmsg_imu_data_changed_flag = 0;
+uint8_t pru_rpmsg_rc_data_changed_flag = 0;
 
 static void prb_init_buffers()
 {
@@ -80,7 +87,6 @@ static uint8_t prb_init_rpmsg()
     return 0;
 }
 
-
 /**
  * main.c
  */
@@ -101,8 +107,15 @@ int main(void)
      */
     prb_init_rpmsg();
 
+    pru_pwmss_lib_Init(PWMSS_DEVICE_FRONT);
+    pru_pwmss_lib_Init(PWMSS_DEVICE_REAR);
+
+    pru_pwmss_lib_Start(PWMSS_DEVICE_FRONT);
+    pru_pwmss_lib_Start(PWMSS_DEVICE_REAR);
+
     src_mpu_channel = 0;
     src_rc_channel = 0;
+
     while (1)
     {
         // receive data from PRU1
@@ -114,28 +127,65 @@ int main(void)
             {
             case MPU_DATA_MSG_TYPE:
             {
+                /* TODO:
+                 * 1) Calcolare inv(A)*M*k=F (requested_accels)
+                 * 2) Calcolare risposta motori (implementare in prb_motors fornendo le accelerazioni rilevate)
+                 * 3) Calcolare uscita Pwmss (con prb_motors_calculate(required_accels detected_accels))
+                 * 4) Inviare messaggio con RC, IMU, Motors, etc?
+                 *    Questo permette di avere un unico driver su linux che riceve tutti i dati del controller su un unico
+                 *    channel a frequenza 1KHz
+                 */
+
+                /*
+                 * Esempio di calcolo per motori
+                 * da implementare in prb_motors_utils::prb_motors_calculate
+                 */
+                // TODO: calcolare effetto sui motori dai dati mpu ed rc
+//                received_pru1_data_struct->message_type = MOTORS_DATA_MSG_TYPE;
+//                uint16_t* pru_rpmsg_motors_ptr = prb_motors_get_motors_target();
+//
+//                pru_pwmss_lib_SetDuty(
+//                        PWMSS_DEVICE_FRONT,
+//                        pru_rpmsg_motors_ptr[PRB_MOTORS_FRONT_LEFT - 1],
+//                        pru_rpmsg_motors_ptr[PRB_MOTORS_FRONT_RIGHT - 1]);
+//                pru_pwmss_lib_SetDuty(
+//                        PWMSS_DEVICE_REAR,
+//                        pru_rpmsg_motors_ptr[PRB_MOTORS_REAR_LEFT - 1],
+//                        pru_rpmsg_motors_ptr[PRB_MOTORS_REAR_RIGHT - 1]);
+
+
                 // nothing to do ... send data as is to the ARM
                 // send data from PRU1 to ARM
-                if(src_mpu_channel != 0) {
-                    pru_rpmsg_send(&transport, RPMSG_MPU_CHAN_PORT, src_mpu_channel, received_pru1_data,
+                if (src_mpu_channel != 0)
+                {
+                    pru_rpmsg_send(&transport, RPMSG_MPU_CHAN_PORT,
+                                   src_mpu_channel, received_pru1_data,
                                    sizeof(PrbMessageType));
                 }
                 break;
             } // end case MPU_DATA_MSG_TYPE
             case RC_DATA_MSG_TYPE:
             {
-                if(src_rc_channel != 0) {
-                    // send data from PRU1 to ARM
-                    pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT, src_rc_channel, received_pru1_data,
-                                   sizeof(PrbMessageType));
-                }
+                /* TODO:
+                 * assegnare localmente i dati RC e conservarli in modo
+                 * tale che siano usati durante il calcolo (quando arrivano i dati mpu)
+                 */
+
+                // Questo non è più necessario Togliere:
+//                if (src_rc_channel != 0)
+//                {
+//                    // send data from PRU1 to ARM
+//                    pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
+//                                   src_rc_channel, received_pru1_data,
+//                                   sizeof(PrbMessageType));
+//                }
                 break;
             }
                 // end case RC_DATA_MSG_TYPE
             } // end switch
 
         } // end if received message from P1
-        // received message from ARM
+          // received message from ARM
         else if (CT_INTC.SECR0_bit.ENA_STS_31_0 & (1 << INT_ARM_TO_P0))
         {
             CT_INTC.SICR_bit.STS_CLR_IDX = INT_ARM_TO_P0;
@@ -163,18 +213,22 @@ int main(void)
                 }
                 case MPU_CREATE_CHANNEL_MSG_TYPE:
                 {
-                    while (pru_rpmsg_channel(RPMSG_NS_CREATE, &transport, RPMSG_MPU_CHAN_NAME,
-                        RPMSG_MPU_CHAN_DESC,
-                                                 RPMSG_MPU_CHAN_PORT) != PRU_RPMSG_SUCCESS)
-                            ;
+                    while (pru_rpmsg_channel(RPMSG_NS_CREATE, &transport,
+                                             RPMSG_MPU_CHAN_NAME,
+                                             RPMSG_MPU_CHAN_DESC,
+                                             RPMSG_MPU_CHAN_PORT)
+                            != PRU_RPMSG_SUCCESS)
+                        ;
                     break;
                 } // end case MPU_CREATE_CHANNEL
                 case MPU_DESTROY_CHANNEL_MSG_TYPE:
                 {
-                    while (pru_rpmsg_channel(RPMSG_NS_DESTROY, &transport, RPMSG_MPU_CHAN_NAME,
-                        RPMSG_MPU_CHAN_DESC,
-                                                 RPMSG_MPU_CHAN_PORT) != PRU_RPMSG_SUCCESS)
-                            ;
+                    while (pru_rpmsg_channel(RPMSG_NS_DESTROY, &transport,
+                                             RPMSG_MPU_CHAN_NAME,
+                                             RPMSG_MPU_CHAN_DESC,
+                                             RPMSG_MPU_CHAN_PORT)
+                            != PRU_RPMSG_SUCCESS)
+                        ;
                     break;
                 } // end case MPU_DESTROY_CHANNEL_MSG_TYPE
                 case RC_ENABLE_MSG_TYPE:
@@ -189,18 +243,22 @@ int main(void)
                 }
                 case RC_CREATE_CHANNEL_MSG_TYPE:
                 {
-                    while (pru_rpmsg_channel(RPMSG_NS_CREATE, &transport, RPMSG_RC_CHAN_NAME,
-                        RPMSG_RC_CHAN_DESC,
-                                                 RPMSG_RC_CHAN_PORT) != PRU_RPMSG_SUCCESS)
-                            ;
+                    while (pru_rpmsg_channel(RPMSG_NS_CREATE, &transport,
+                                             RPMSG_RC_CHAN_NAME,
+                                             RPMSG_RC_CHAN_DESC,
+                                             RPMSG_RC_CHAN_PORT)
+                            != PRU_RPMSG_SUCCESS)
+                        ;
                     break;
                 } // end case RC_CREATE_CHANNEL
                 case RC_DESTROY_CHANNEL_MSG_TYPE:
                 {
-                    while (pru_rpmsg_channel(RPMSG_NS_DESTROY, &transport, RPMSG_RC_CHAN_NAME,
-                        RPMSG_RC_CHAN_DESC,
-                                                 RPMSG_RC_CHAN_PORT) != PRU_RPMSG_SUCCESS)
-                            ;
+                    while (pru_rpmsg_channel(RPMSG_NS_DESTROY, &transport,
+                                             RPMSG_RC_CHAN_NAME,
+                                             RPMSG_RC_CHAN_DESC,
+                                             RPMSG_RC_CHAN_PORT)
+                            != PRU_RPMSG_SUCCESS)
+                        ;
                     break;
                 } // end case RC_DESTROY_CHANNEL_MSG_TYPE
                 } // end switch

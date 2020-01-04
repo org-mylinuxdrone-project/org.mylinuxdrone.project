@@ -46,6 +46,8 @@
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../pru-software-support-package/include"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/pwmss/include"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/motors_pwmss/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../pru-software-support-package/include/am335x"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
 								</option>
@@ -66,11 +68,15 @@
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.DIAG_WRAP.1186088323" name="Wrap diagnostic messages (--diag_wrap)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.DIAG_WRAP" useByScannerDiscovery="false" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.DIAG_WRAP.off" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.SEARCH_PATH.2113649949" name="Add &lt;dir&gt; to library search path (--search_path, -i)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.SEARCH_PATH" valueType="libPaths">
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../pru-software-support-package/lib/"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/motors_pwmss/Debug"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/pwmss/Debug"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/lib"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.LIBRARY.868449658" name="Include library file or command file as input (--library, -l)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.linkerID.LIBRARY" useByScannerDiscovery="false" valueType="libs">
 									<listOptionValue builtIn="false" value="libc.a"/>
+									<listOptionValue builtIn="false" value="pru_motors_pwmss.lib"/>
+									<listOptionValue builtIn="false" value="pru_pwmss.lib"/>
 									<listOptionValue builtIn="false" value="rpmsg_lib.lib"/>
 								</option>
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.exeLinker.inputType__CMD_SRCS.826657312" name="Linker Command Files" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.exeLinker.inputType__CMD_SRCS"/>
