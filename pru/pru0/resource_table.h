@@ -49,8 +49,8 @@
  *              host is internally mapped to the ARM INTC, and hence generates
  *              an ARM interrupt.
  */
-#define CHNL_PRU0_TO_PRU1       1
-#define HOST_PRU0_TO_PRU1       1
+#define CHNL_PRU0_TO_PRU1       1 // TODO: Togliere. non gestito
+#define HOST_PRU0_TO_PRU1       1 // TODO: Togliere. non gestito
 #define CHNL_ARM_TO_PRU0        0
 #define HOST_ARM_TO_PRU0        0
 #define CHNL_PRU0_TO_ARM        2

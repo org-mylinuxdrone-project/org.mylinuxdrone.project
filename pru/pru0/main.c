@@ -87,6 +87,11 @@ static uint8_t prb_init_rpmsg()
 int main(void)
 {
     /*
+     * Clear interrupt to pru1
+     */
+    CT_INTC.SICR_bit.STS_CLR_IDX = INT_P0_TO_P1;
+
+    /*
      * fill payload for received messages to null
      */
     prb_init_buffers();

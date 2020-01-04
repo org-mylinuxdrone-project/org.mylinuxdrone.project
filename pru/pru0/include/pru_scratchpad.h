@@ -29,15 +29,15 @@
  * R31_P0_TO_P1 : The value that when written to R31 register will
  *              generate INT_P1_TO_P0 interrupt
  */
-#define R31_P0_TO_P1    (1<<5) | (INT_P0_TO_P1 - 16)
-#define R31_P1_TO_P0    (1<<5) | (INT_P1_TO_P0 - 16)
+#define R31_P0_TO_P1    (1<<5) | (INT_P0_TO_P1 - 16) // TODO: Togliere. non usato
+#define R31_P1_TO_P0    (1<<5) | (INT_P1_TO_P0 - 16) // TODO: Togliere. non usato
 
 /*
  * HOST_PRU0_TO_PRU1_CB : The check bit to check HOST_PRU0_TO_PRU1 interrupt
  *              Since the value of HOST_PRU0_TO_PRU1 is 1, HOST_PRU0_TO_PRU1_CB
  *              has the value 31
  */
-#define HOST_PRU0_TO_PRU1_CB    31 // host channel 1
+#define HOST_PRU0_TO_PRU1_CB    31 // TODO: Togliere. non usato. host channel 1 mapped on bit 31 of R31
 
 /* Address of the external peripherals
  * SHARED_MEM_ADDR : Absolute local address of the 12 KB shared RAM that will be
