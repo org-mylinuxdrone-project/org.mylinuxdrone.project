@@ -147,6 +147,13 @@ int main(void)
     CT_INTC.SICR_bit.STS_CLR_IDX = INT_P1_TO_P0;
 
     /*
+     * Init RC
+     * Attenzione: l'inizializzazione rc deve partire per prima
+     * altrimenti non parte edma ... verificare perché
+     */
+    rc_receiver_Init();
+
+    /*
      * CT_CFG.SYSCFG_bit.STANDBY_INIT : the object is used to write data to
      * the SYSCFG register. Writing 0 to the STANDBY_INIT section of the
      * register opens up the OCP master port that is used for PRU to ARM
@@ -173,10 +180,6 @@ int main(void)
         CHECK++;
         ERROR = 3;
     }
-
-    // init rc
-    rc_receiver_Init();
-
     while (1)
     {
         // Rules: ordered by priority

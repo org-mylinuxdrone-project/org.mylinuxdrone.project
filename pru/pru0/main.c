@@ -171,14 +171,14 @@ int main(void)
                  * tale che siano usati durante il calcolo (quando arrivano i dati mpu)
                  */
 
-                // Questo non è più necessario Togliere:
-//                if (src_rc_channel != 0)
-//                {
-//                    // send data from PRU1 to ARM
-//                    pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
-//                                   src_rc_channel, received_pru1_data,
-//                                   sizeof(PrbMessageType));
-//                }
+                // TODO: Questo non è più necessario Togliere:
+                if (src_rc_channel != 0)
+                {
+                    // send data from PRU1 to ARM
+                    pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
+                                   src_rc_channel, received_pru1_data,
+                                   sizeof(PrbMessageType));
+                }
                 break;
             }
                 // end case RC_DATA_MSG_TYPE
