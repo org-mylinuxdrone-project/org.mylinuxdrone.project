@@ -60,7 +60,7 @@ function [Imu, Err, ErrI, ErrD, Out, Motors, Resp] = calcStepsResp(F,kp,ki,kd, R
          Resp(1:4,1)=[1;1;1;1];
          Out0(1:4,1)=F(1:4,1)+A'/4*Err(1:4,1);
          Out(1:4,1)=Out0(1:4,1);
-         Motors(1:4,1)=[1000;1000;1000;1000] + 1000*Out(1:4,1)/100;
+         Motors(1:4,1)=[1000;1000;1000;1000] + 10*Out(1:4,1);
          for i=[2:1:size(F,2)]
            Imu(1:4,i)=A*(RM*(Motors(1:4,i-1)-1000))/10;
            Err(1:4,i)=A*(Out0(1:4,i-1))-(Imu(1:4,i)-Imu(1:4,i-1));
@@ -68,9 +68,10 @@ function [Imu, Err, ErrI, ErrD, Out, Motors, Resp] = calcStepsResp(F,kp,ki,kd, R
            ErrD(1:4,i)=Err(1:4,i)-Err(1:4,i-1);
 
            Out0(1:4,i)=(F(1:4,i)+A'/4*(kp*Err(1:4,i)+kd*ErrD(1:4,i)+ki*ErrI(1:4,i)));
-           Resp(1:4,i)=0.1*(Motors(1:4,i-1)-1000)./(1000*(A'/4*Imu(1:4,i))/100)+0.9*Resp(1:4,i-1);
+           // Risposta = (uscita reale)/(uscita teorica)  (filtrato)
+           Resp(1:4,i)=0.1*(Motors(1:4,i-1)-1000)./(10*(A'/4*Imu(1:4,i)))+0.9*Resp(1:4,i-1);
            Out(1:4,i)=Out0(1:4,i).*Resp(1:4,i);
-           Motors(1:4,i)=Motors(1:4,i-1) + 1000*Out(1:4,i)/100;
+           Motors(1:4,i)=Motors(1:4,i-1) + 10*Out(1:4,i);
          end
 endfunction
 
@@ -79,7 +80,7 @@ F=calcF(calcIn(genOmega(10,10)));
 Rnd=rand([1:1:size(F,2)])';
 [myImu, myErr, myErrI, myErrD, myOut, myMotors, myResp]=calcStepsSimple(F, 1,0,0, Rnd);
 [myImu1, myErr1, myErrI1, myErrD1, myOut1, myMotors1, myResp1]=calcStepsResp(F, 1.0,0.000,0.0,Rnd);
-[myImu2, myErr2, myErrI2, myErrD2, myOut2, myMotors2, myResp2]=calcStepsResp(F, 1.0,0.00,0.00,Rnd);
+[myImu2, myErr2, myErrI2, myErrD2, myOut2, myMotors2, myResp2]=calcStepsResp(F, 1.0,0.01,0.5,Rnd);
 
 T=[1:1:size(myImu,2)]
 scf();
