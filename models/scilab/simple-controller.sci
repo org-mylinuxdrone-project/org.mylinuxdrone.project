@@ -74,7 +74,8 @@ function [Imu, Err, ErrI, ErrD, Out, Motors, Resp] = calcStepsResp(F,kp,ki,kd, R
            Out0(1:4,i)=(F(1:4,i)+(kp*Err(1:4,i)+kd*ErrD(1:4,i)+ki*ErrI(1:4,i)));
 
            // Risposta = (uscita reale)/(uscita teorica)  (filtrato)
-           Resp(1:4,i)=0.1*(Motors(1:4,i-1)-1000)./(10*(A'/4*Imu(1:4,i)))+0.9*Resp(1:4,i-1);
+           //Resp(1:4,i)=0.1*(Motors(1:4,i-1)-1000)./(10*(A'/4*Imu(1:4,i)))+0.9*Resp(1:4,i-1);
+           Resp(1:4,i)=Motors(1:4,i-1)./(1000+10*(A'/4*Imu(1:4,i)));
 
            // calcolo le accelerazioni richieste pesate rispetto alla risposta dei motori
            Out(1:4,i)=Out0(1:4,i).*Resp(1:4,i);

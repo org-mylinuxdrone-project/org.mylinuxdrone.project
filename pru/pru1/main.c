@@ -138,6 +138,7 @@ inline void clean_rc_buffer()
     }
 }
 
+uint8_t rc_receiver_Init_result = 0;
 /**
  * main.c
  */
@@ -148,10 +149,12 @@ int main(void)
 
     /*
      * Init RC
-     * Attenzione: l'inizializzazione rc deve partire per prima
-     * altrimenti non parte edma ... verificare perché
+     * Attenzione! richiede livello di ottimizzazione 'off' per la build.
+     * Abilitando anche solo il livello 1, 'edma' non parte.
+     * Probabilmente devo inserire qualche sleep nel processo di inizializzazione
+     * TODO: verificare
      */
-    rc_receiver_Init();
+    rc_receiver_Init_result = rc_receiver_Init();
 
     /*
      * CT_CFG.SYSCFG_bit.STANDBY_INIT : the object is used to write data to
