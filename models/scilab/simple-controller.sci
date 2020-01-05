@@ -62,15 +62,24 @@ function [Imu, Err, ErrI, ErrD, Out, Motors, Resp] = calcStepsResp(F,kp,ki,kd, R
          Out(1:4,1)=Out0(1:4,1);
          Motors(1:4,1)=[1000;1000;1000;1000] + 10*Out(1:4,1);
          for i=[2:1:size(F,2)]
+           // simulo lo stato dell'imu ..
            Imu(1:4,i)=A*(RM*(Motors(1:4,i-1)-1000))/10;
-           Err(1:4,i)=A*(Out0(1:4,i-1))-(Imu(1:4,i)-Imu(1:4,i-1));
+
+           // calcolo l'errore (accelerazioni richieste non compensate - variazione imu ottenuta)
+           Err(1:4,i)=(Out0(1:4,i-1))-A'/4*(Imu(1:4,i)-Imu(1:4,i-1));
            ErrI(1:4,i)=Err(1:4,i)+ErrI(1:4,i-1);
            ErrD(1:4,i)=Err(1:4,i)-Err(1:4,i-1);
 
-           Out0(1:4,i)=(F(1:4,i)+A'/4*(kp*Err(1:4,i)+kd*ErrD(1:4,i)+ki*ErrI(1:4,i)));
+           // calcolo le accelerazioni richieste senza compensazione della risposta
+           Out0(1:4,i)=(F(1:4,i)+(kp*Err(1:4,i)+kd*ErrD(1:4,i)+ki*ErrI(1:4,i)));
+
            // Risposta = (uscita reale)/(uscita teorica)  (filtrato)
            Resp(1:4,i)=0.1*(Motors(1:4,i-1)-1000)./(10*(A'/4*Imu(1:4,i)))+0.9*Resp(1:4,i-1);
+
+           // calcolo le accelerazioni richieste pesate rispetto alla risposta dei motori
            Out(1:4,i)=Out0(1:4,i).*Resp(1:4,i);
+
+           // calcolo uscita motori
            Motors(1:4,i)=Motors(1:4,i-1) + 10*Out(1:4,i);
          end
 endfunction
