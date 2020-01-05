@@ -40,7 +40,8 @@ function [Imu, Err, ErrI, ErrD, Out, Motors, Resp] = calcStepsSimple(F,kp,ki,kd,
          Out(1:4,1)=F(1:4,1)+A'/4*Err(1:4,1);
          Motors(1:4,1)=[1000;1000;1000;1000] + 1000*Out(1:4,1)/100;
          for i=[2:1:size(F,2)]
-           Imu(1:4,i)=A*((RM.*cos(%pi/4*(i/size(F,2))))*(Motors(1:4,i-1)-1000))/1000*100 + Rnd(i);
+           //Imu(1:4,i)=A*((RM.*cos(%pi/4*(i/size(F,2))))*(Motors(1:4,i-1)-1000))/1000*100 + Rnd(i);
+           Imu(1:4,i)=A*(RM*(Motors(1:4,i-1)-1000))/10;
            Err(1:4,i)=A*Out(1:4,i-1)-(Imu(1:4,i)-Imu(1:4,i-1));
            ErrI(1:4,i)=Err(1:4,i)+ErrI(1:4,i-1);
            ErrD(1:4,i)=Err(1:4,i)-Err(1:4,i-1);
@@ -57,17 +58,18 @@ function [Imu, Err, ErrI, ErrD, Out, Motors, Resp] = calcStepsResp(F,kp,ki,kd, R
          ErrI(1:4,1)=[0;0;0;0];
          ErrD(1:4,1)=[0;0;0;0];
          Resp(1:4,1)=[1;1;1;1];
-         Out(1:4,1)=F(1:4,1)+A'/4*Err(1:4,1);
+         Out0(1:4,1)=F(1:4,1)+A'/4*Err(1:4,1);
+         Out(1:4,1)=Out0(1:4,1);
          Motors(1:4,1)=[1000;1000;1000;1000] + 1000*Out(1:4,1)/100;
          for i=[2:1:size(F,2)]
-           Imu(1:4,i)=A*((RM.*cos(%pi/4*(i/size(F,2))))*(Motors(1:4,i-1)-1000))/1000*100 + Rnd(i);
-           Err(1:4,i)=A*(Out(1:4,i-1)./Resp(1:4,i-1))-(Imu(1:4,i)-Imu(1:4,i-1));
+           Imu(1:4,i)=A*(RM*(Motors(1:4,i-1)-1000))/10;
+           Err(1:4,i)=A*(Out0(1:4,i-1))-(Imu(1:4,i)-Imu(1:4,i-1));
            ErrI(1:4,i)=Err(1:4,i)+ErrI(1:4,i-1);
            ErrD(1:4,i)=Err(1:4,i)-Err(1:4,i-1);
 
-           // FIXME: Quando la Resp tende a zero, Out tende a infinito.
+           Out0(1:4,i)=(F(1:4,i)+A'/4*(kp*Err(1:4,i)+kd*ErrD(1:4,i)+ki*ErrI(1:4,i)));
            Resp(1:4,i)=0.1*(Motors(1:4,i-1)-1000)./(1000*(A'/4*Imu(1:4,i))/100)+0.9*Resp(1:4,i-1);
-           Out(1:4,i)=(F(1:4,i)+A'/4*(kp*Err(1:4,i)+kd*ErrD(1:4,i)+ki*ErrI(1:4,i))).*Resp(1:4,i);
+           Out(1:4,i)=Out0(1:4,i).*Resp(1:4,i);
            Motors(1:4,i)=Motors(1:4,i-1) + 1000*Out(1:4,i)/100;
          end
 endfunction
