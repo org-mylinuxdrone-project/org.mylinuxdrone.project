@@ -19,9 +19,21 @@
  */
 #ifndef PRU_CONTROLLER_H_
 #define PRU_CONTROLLER_H_
+#include <stdint.h>
 
+#ifndef POS_YAW
+#define POS_YAW      0
+#endif
+#ifndef POS_PITCH
+#define POS_PITCH    1
+#endif
+#ifndef POS_ROLL
+#define POS_ROLL     2
+#endif
+#ifndef POS_THROTTLE
+#define POS_THROTTLE 3
+#endif
 
-
-
+void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro);
 
 #endif /* PRU_CONTROLLER_H_ */
