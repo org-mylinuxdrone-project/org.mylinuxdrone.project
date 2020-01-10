@@ -183,10 +183,10 @@ int main(void)
             case RC_DATA_MSG_TYPE:
             {
                 // Map rc channels from sensor to pid order
-                pru_rpmsg_rc[POS_THROTTLE] = received_pru1_data_struct->rc.throttle;
                 pru_rpmsg_rc[POS_YAW] = received_pru1_data_struct->rc.yaw;
                 pru_rpmsg_rc[POS_PITCH] = received_pru1_data_struct->rc.pitch;
                 pru_rpmsg_rc[POS_ROLL] = received_pru1_data_struct->rc.roll;
+                pru_rpmsg_rc[POS_THROTTLE] = received_pru1_data_struct->rc.throttle;
                 pru_rpmsg_rc[POS_AUX1] = received_pru1_data_struct->rc.aux1;
                 pru_rpmsg_rc[POS_AUX2] = received_pru1_data_struct->rc.aux2;
                 pru_rpmsg_rc[POS_AUX3] = received_pru1_data_struct->rc.aux3;

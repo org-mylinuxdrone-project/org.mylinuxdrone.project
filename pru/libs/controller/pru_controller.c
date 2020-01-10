@@ -73,8 +73,8 @@ int16_t MErr[4];    // sostituito
 int16_t MIErr[4];   // accumulato
 int16_t MDErr[4];   // sostituito
 uint16_t ke = 0x0100;    // fix point 8 bits (0x0100 corrisponde a 1)
-uint16_t ki = 0x0100;    // fix point 8 bits
-uint16_t kd = 0x0100;    // fix point 8 bits
+uint16_t ki = 0x0000;    // fix point 8 bits
+uint16_t kd = 0x0000;    // fix point 8 bits
 int16_t throttlePrev = 0;
 int8_t invA[4][4] = {
                     {-1, -1, -1, 1 },

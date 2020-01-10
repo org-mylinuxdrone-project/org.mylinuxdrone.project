@@ -31,14 +31,14 @@ uint32_t* CM_PER_TPTC0_CLKCTRL = (uint32_t*) 0x44E00024;
 
 rc_receiver_chan_def_struct rc_receiver_chan_def[8] = {
        // TODO: configurazione di default (riprendere dai dati rilevati in bbb)
-       {},
-       {},
-       {},
-       {},
-       {},
-       {},
-       {},
-       {}
+       {1131, 1878, 2630, 1131, 2625, 747, 44918}, // roll
+       {1084, 1886, 2631, 1141, 2631, 745, 45038}, // throttle
+       {1214,1842,2519, 1214, 2470, 628, 53430}, // pitch
+       {1082,1844,2598, 1090, 2598, 754, 44501}, // yaw
+       {1081,1855,2629, 1081, 2629, 774, 43351}, // aux2
+       {1081,1855,2629, 1081, 2629, 774, 43351}, // aux1
+       {1081,1855,2629, 1081, 2629, 774, 43351}, // aux3
+       {1081,1855,2629, 1081, 2629, 774, 43351}  // aux4
 };
 
 #ifdef pru1
@@ -192,9 +192,8 @@ void rc_receiver_set_conf(rc_receiver_chan_def_struct* conf) {
         rc_receiver_chan_def[_rc_receiver_counter8].radius = MIN(abs(rc_receiver_chan_def[_rc_receiver_counter8].rawCenter - (rc_receiver_chan_def[_rc_receiver_counter8].rawMin)),
                                                                  abs(rc_receiver_chan_def[_rc_receiver_counter8].rawCenter - (rc_receiver_chan_def[_rc_receiver_counter8].rawMax)));
 
-        rawCenterRidotto = (rc_receiver_chan_def[_rc_receiver_counter8].rawCenter >> 7);
-        rc_receiver_chan_def[_rc_receiver_counter8].min = rawCenterRidotto - rc_receiver_chan_def[_rc_receiver_counter8].radius;
-        rc_receiver_chan_def[_rc_receiver_counter8].max = rawCenterRidotto + rc_receiver_chan_def[_rc_receiver_counter8].radius;
+        rc_receiver_chan_def[_rc_receiver_counter8].min = rc_receiver_chan_def[_rc_receiver_counter8].rawCenter - rc_receiver_chan_def[_rc_receiver_counter8].radius;
+        rc_receiver_chan_def[_rc_receiver_counter8].max = rc_receiver_chan_def[_rc_receiver_counter8].rawCenter + rc_receiver_chan_def[_rc_receiver_counter8].radius;
         rc_receiver_chan_def[_rc_receiver_counter8].factor = ((uint32_t)65535 << 10)/(rc_receiver_chan_def[_rc_receiver_counter8].radius << 1);
     }
 }
@@ -301,12 +300,13 @@ uint8_t rc_receiver_extract_Data(int32_t* rc_buffer)
      *    - radius = min(|center - rawMin|, |rawMax - center|),
      *    - factor = (65535*2^10)/(2*radius[chan]) )
      * - Il valore rilevato viene trasformato in:
-     *   - scaledValue = factor*LIMIT(min, max, rawValue)
+     *   - scaledValue = (factor*CENTER(LIMIT(min, max, rawValue), center)) >> 10
      */
-    for (_rc_receiver_counter8 = 0; _rc_receiver_counter8 < 8; _rc_receiver_counter8++)
+    for (_rc_receiver_counter8 = 1; _rc_receiver_counter8 < 9; _rc_receiver_counter8++)
     {
-        rc_buffer[_rc_receiver_counter8] = rc_receiver_chan_def[_rc_receiver_counter8].factor *
-                                           LIMIT((rc_buffer[_rc_receiver_counter8] >> 7), rc_receiver_chan_def[_rc_receiver_counter8].max, rc_receiver_chan_def[_rc_receiver_counter8].min);
+        rc_buffer[_rc_receiver_counter8] = (rc_receiver_chan_def[_rc_receiver_counter8].factor *
+                                            (LIMIT((rc_buffer[_rc_receiver_counter8] >> 7), rc_receiver_chan_def[_rc_receiver_counter8].max, rc_receiver_chan_def[_rc_receiver_counter8].min) - rc_receiver_chan_def[_rc_receiver_counter8].rawCenter)
+                                           ) >> 10;
     }
     return _rc_receiver_found && (_rc_receiver_curr_channel > 8);
 }

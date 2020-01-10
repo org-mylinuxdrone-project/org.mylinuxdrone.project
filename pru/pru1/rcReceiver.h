@@ -95,7 +95,7 @@ typedef struct {
     int16_t min;
     int16_t max;
     int16_t radius;
-    int16_t factor;
+    uint16_t factor;
 } rc_receiver_chan_def_struct;
 
 void rc_receiver_set_conf(rc_receiver_chan_def_struct* conf);
