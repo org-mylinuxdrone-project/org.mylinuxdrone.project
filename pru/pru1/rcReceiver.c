@@ -29,6 +29,18 @@ EDMA_PaRAM_STRUCT* EDMA_PaRAM = (EDMA_PaRAM_STRUCT*)EDMA_0_PARAM;
 uint32_t* CM_PER_TPCC_CLKCTRL  = (uint32_t*) 0x44E000BC;
 uint32_t* CM_PER_TPTC0_CLKCTRL = (uint32_t*) 0x44E00024;
 
+rc_receiver_chan_def_struct rc_receiver_chan_def[8] = {
+       // TODO: configurazione di default (riprendere dai dati rilevati in bbb)
+       {},
+       {},
+       {},
+       {},
+       {},
+       {},
+       {},
+       {}
+};
+
 #ifdef pru1
 char* DATA_MEMORY_BASE_ADDRESS = (char*)0x4A302000;
 #else
@@ -167,6 +179,25 @@ uint8_t rc_receiver_intc_Init() {
     CT_INTC.GER_bit.EN_HINT_ANY = 1; // enable all host interrupt
     return 1;
 }
+/*
+ * Riceve in input un array di 8 elementi di tipo rc_receiver_chan_def_struct
+ */
+void rc_receiver_set_conf(rc_receiver_chan_def_struct* conf) {
+    int16_t rawCenterRidotto = 0;
+    for(_rc_receiver_counter8 = 0; _rc_receiver_counter8 < 8; _rc_receiver_counter8++) {
+        rc_receiver_chan_def[_rc_receiver_counter8].rawMin = (conf[_rc_receiver_counter8].rawMin);
+        rc_receiver_chan_def[_rc_receiver_counter8].rawMax = (conf[_rc_receiver_counter8].rawMax);
+        rc_receiver_chan_def[_rc_receiver_counter8].rawCenter = (conf[_rc_receiver_counter8].rawCenter);
+
+        rc_receiver_chan_def[_rc_receiver_counter8].radius = MIN(abs(rc_receiver_chan_def[_rc_receiver_counter8].rawCenter - (rc_receiver_chan_def[_rc_receiver_counter8].rawMin)),
+                                                                 abs(rc_receiver_chan_def[_rc_receiver_counter8].rawCenter - (rc_receiver_chan_def[_rc_receiver_counter8].rawMax)));
+
+        rawCenterRidotto = (rc_receiver_chan_def[_rc_receiver_counter8].rawCenter >> 7);
+        rc_receiver_chan_def[_rc_receiver_counter8].min = rawCenterRidotto - rc_receiver_chan_def[_rc_receiver_counter8].radius;
+        rc_receiver_chan_def[_rc_receiver_counter8].max = rawCenterRidotto + rc_receiver_chan_def[_rc_receiver_counter8].radius;
+        rc_receiver_chan_def[_rc_receiver_counter8].factor = ((uint32_t)65535 << 10)/(rc_receiver_chan_def[_rc_receiver_counter8].radius << 1);
+    }
+}
 uint8_t rc_receiver_Init() {
     return rc_receiver_intc_Init() && rc_receiver_ecap_Init() & rc_receiver_edma_Init();
 }
@@ -220,7 +251,7 @@ uint8_t rc_receiver_PulseNewData() {
     return rc_receiver_result;
 }
 
-uint8_t rc_receiver_extract_Data(uint32_t* rc_buffer)
+uint8_t rc_receiver_extract_Data(int32_t* rc_buffer)
 {
     _rc_receiver_ecap_data = rc_receiver_edma_get_Data();
     for (_rc_receiver_counter8 = 0; _rc_receiver_counter8 < 9; _rc_receiver_counter8++)
@@ -256,6 +287,26 @@ uint8_t rc_receiver_extract_Data(uint32_t* rc_buffer)
 
             }
         }
+    }
+
+    /*
+     * TODO: mettere in scala [-32768, +32767]
+     * - In configurazione:
+     *   - Ogni channel è definito da:
+     *    - rawMin,
+     *    - center,
+     *    - rawMax,
+     *    - min = center - radius,
+     *    - max = rawMax,
+     *    - radius = min(|center - rawMin|, |rawMax - center|),
+     *    - factor = (65535*2^10)/(2*radius[chan]) )
+     * - Il valore rilevato viene trasformato in:
+     *   - scaledValue = factor*LIMIT(min, max, rawValue)
+     */
+    for (_rc_receiver_counter8 = 0; _rc_receiver_counter8 < 8; _rc_receiver_counter8++)
+    {
+        rc_buffer[_rc_receiver_counter8] = rc_receiver_chan_def[_rc_receiver_counter8].factor *
+                                           LIMIT((rc_buffer[_rc_receiver_counter8] >> 7), rc_receiver_chan_def[_rc_receiver_counter8].max, rc_receiver_chan_def[_rc_receiver_counter8].min);
     }
     return _rc_receiver_found && (_rc_receiver_curr_channel > 8);
 }

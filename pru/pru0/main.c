@@ -5,6 +5,7 @@
 #include <pru_rpmsg.h>
 #include <prb_pwmss.h>
 #include <prb_motors_utils.h>
+#include <pru_controller.h>
 
 #define VIRTIO_CONFIG_S_DRIVER_OK  4
 #define PWMSS_DEVICE_FRONT 0
@@ -22,6 +23,10 @@ PrbMessageType* received_arm_data_struct = (PrbMessageType*) received_arm_data;
 int counter32 = 0;
 uint8_t pru_rpmsg_imu_data_changed_flag = 0;
 uint8_t pru_rpmsg_rc_data_changed_flag = 0;
+
+int16_t pru_rpmsg_accel[3] = {0};
+int16_t pru_rpmsg_gyro[3] = {0};
+int16_t pru_rpmsg_rc[8] = {0};
 
 static void prb_init_buffers()
 {
@@ -153,6 +158,17 @@ int main(void)
 //                        pru_rpmsg_motors_ptr[PRB_MOTORS_REAR_LEFT - 1],
 //                        pru_rpmsg_motors_ptr[PRB_MOTORS_REAR_RIGHT - 1]);
 
+                /*
+                 * Map accel/gyro sensor data to accel/gyro pid data
+                 * The accel/gyro sensor data have an inverted order respect to pid data.
+                 * from (x, y, z) to (yaw, pitch, roll)
+                 */
+                for(counter32 = 0; counter32 < 3; counter32++) {
+                    pru_rpmsg_accel[3-counter32] = received_pru1_data_struct->mpu_accel_gyro_vect.accel[counter32];
+                    pru_rpmsg_gyro[3-counter32] = received_pru1_data_struct->mpu_accel_gyro_vect.gyro[counter32];
+                }
+                pru_controller_apply(pru_rpmsg_gyro, pru_rpmsg_accel, pru_rpmsg_gyro);
+
 
                 // nothing to do ... send data as is to the ARM
                 // send data from PRU1 to ARM
@@ -166,12 +182,16 @@ int main(void)
             } // end case MPU_DATA_MSG_TYPE
             case RC_DATA_MSG_TYPE:
             {
-                /* TODO:
-                 * assegnare localmente i dati RC e conservarli in modo
-                 * tale che siano usati durante il calcolo (quando arrivano i dati mpu)
-                 */
+                // Map rc channels from sensor to pid order
+                pru_rpmsg_rc[POS_THROTTLE] = received_pru1_data_struct->rc.throttle;
+                pru_rpmsg_rc[POS_YAW] = received_pru1_data_struct->rc.yaw;
+                pru_rpmsg_rc[POS_PITCH] = received_pru1_data_struct->rc.pitch;
+                pru_rpmsg_rc[POS_ROLL] = received_pru1_data_struct->rc.roll;
+                pru_rpmsg_rc[POS_AUX1] = received_pru1_data_struct->rc.aux1;
+                pru_rpmsg_rc[POS_AUX2] = received_pru1_data_struct->rc.aux2;
+                pru_rpmsg_rc[POS_AUX3] = received_pru1_data_struct->rc.aux3;
+                pru_rpmsg_rc[POS_AUX4] = received_pru1_data_struct->rc.aux4;
 
-                // TODO: Questo non è più necessario Togliere:
                 if (src_rc_channel != 0)
                 {
                     // send data from PRU1 to ARM

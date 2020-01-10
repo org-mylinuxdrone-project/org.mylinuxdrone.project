@@ -78,11 +78,32 @@ void      rc_receiver_switch_edma_Buffer();
 #define RC_RECEIVER_TX_NOT_PRESENT 0x2
 #define RC_RECEIVER_TX_COMPLETE    0x1
 
+#ifndef MAX
+#define MAX(A,B)                              (A > B ? A : B)
+#endif
+#ifndef MIN
+#define MIN(A,B)                              (A < B ? A : B)
+#endif
+#ifndef LIMIT
+#define LIMIT(V,MX,MN)                        (MAX((MN),MIN((V),(MX))))
+#endif
+
+typedef struct {
+    int16_t rawMin;
+    int16_t rawCenter;
+    int16_t rawMax;
+    int16_t min;
+    int16_t max;
+    int16_t radius;
+    int16_t factor;
+} rc_receiver_chan_def_struct;
+
+void rc_receiver_set_conf(rc_receiver_chan_def_struct* conf);
 uint8_t rc_receiver_Init();
 void    rc_receiver_clean_Interrupts();
 uint8_t rc_receiver_Start();
 uint8_t rc_receiver_Stop();
 uint8_t rc_receiver_PulseNewData();
-uint8_t    rc_receiver_extract_Data(uint32_t* rc_buffer);
+uint8_t    rc_receiver_extract_Data(int32_t* rc_buffer);
 
 #endif /* _RC_RECEIVER_H_ */

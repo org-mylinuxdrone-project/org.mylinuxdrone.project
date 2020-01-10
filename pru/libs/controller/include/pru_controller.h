@@ -33,6 +33,18 @@
 #ifndef POS_THROTTLE
 #define POS_THROTTLE 3
 #endif
+#ifndef POS_AUX1
+#define POS_AUX1 4
+#endif
+#ifndef POS_AUX2
+#define POS_AUX2 5
+#endif
+#ifndef POS_AUX3
+#define POS_AUX3 6
+#endif
+#ifndef POS_AUX4
+#define POS_AUX4 7
+#endif
 
 void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro);
 

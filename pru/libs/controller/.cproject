@@ -13,7 +13,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="lib" artifactName="${ProjName}" buildProperties="" cleanCommand="${CG_CLEAN_CMD}" description="" id="com.ti.ccstudio.buildDefinitions.PRU.Debug.101415542" name="Debug" parent="com.ti.ccstudio.buildDefinitions.PRU.Debug">
+				<configuration artifactExtension="lib" artifactName="pru_${ProjName}" buildProperties="" cleanCommand="${CG_CLEAN_CMD}" description="" id="com.ti.ccstudio.buildDefinitions.PRU.Debug.101415542" name="Debug" parent="com.ti.ccstudio.buildDefinitions.PRU.Debug">
 					<folderInfo id="com.ti.ccstudio.buildDefinitions.PRU.Debug.101415542." name="/" resourcePath="">
 						<toolChain id="com.ti.ccstudio.buildDefinitions.PRU_2.2.libraryDebugToolchain.1529895843" name="TI Build Tools" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.libraryDebugToolchain" targetTool="com.ti.ccstudio.buildDefinitions.PRU_2.2.library.librarianDebug.970077100">
 							<option id="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS.1553659952" superClass="com.ti.ccstudio.buildDefinitions.core.OPT_TAGS" valueType="stringList">
@@ -56,7 +56,7 @@
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__ASM2_SRCS.1483878270" name="Assembly Sources" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__ASM2_SRCS"/>
 							</tool>
 							<tool id="com.ti.ccstudio.buildDefinitions.PRU_2.2.library.librarianDebug.970077100" name="PRU Archiver" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.library.librarianDebug">
-								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.archiverID.OUTPUT_FILE.1421503022" name="Output file" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.archiverID.OUTPUT_FILE" useByScannerDiscovery="false" value="${ProjName}.lib" valueType="string"/>
+								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.archiverID.OUTPUT_FILE.1421503022" name="Output file" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.archiverID.OUTPUT_FILE" useByScannerDiscovery="false" value="pru_${ProjName}.lib" valueType="string"/>
 							</tool>
 						</toolChain>
 					</folderInfo>

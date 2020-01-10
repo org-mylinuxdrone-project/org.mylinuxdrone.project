@@ -87,7 +87,7 @@ typedef struct
     union
     {
         struct {
-            uint16_t throttle;
+            int16_t throttle;
             int16_t yaw;
             int16_t pitch;
             int16_t roll;

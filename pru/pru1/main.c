@@ -58,6 +58,7 @@
                                     __xout(SP_BANK_1, 6, 0, pru0_data);\
                                     (CT_INTC.SRSR0_bit.RAW_STS_31_0 |= (1 << INT_P1_TO_P0));\
                                   }
+
 /*
  * buffer for pru0 communications
  */
@@ -73,10 +74,8 @@ uint16_t mosiData[32] = { };
 uint16_t misoData[32] = { };
 
 int16_t temp_raw = 0;
-int16_t acc_axis_raw[3] = { };
-int16_t gyro_axis_raw[3] = { };
 uint8_t rc_receiver_newData = 0;
-uint32_t RC_BUFFER[9] = { 0 };
+int32_t RC_BUFFER[9] = { 0 };
 
 volatile register uint32_t __R31;
 
@@ -203,14 +202,14 @@ int main(void)
             {
                 if (rc_receiver_extract_Data(RC_BUFFER))
                 {
-                    pru0_data_struct->rc.throttle = RC_BUFFER[2] >> 7;
-                    pru0_data_struct->rc.yaw = RC_BUFFER[4] >> 7;
-                    pru0_data_struct->rc.pitch = RC_BUFFER[3] >> 7;
-                    pru0_data_struct->rc.roll = RC_BUFFER[1] >> 7;
-                    pru0_data_struct->rc.aux1 = RC_BUFFER[6] >> 7;
-                    pru0_data_struct->rc.aux2 = RC_BUFFER[5] >> 7;
-                    pru0_data_struct->rc.aux3 = RC_BUFFER[7] >> 7;
-                    pru0_data_struct->rc.aux4 = RC_BUFFER[8] >> 7;
+                    pru0_data_struct->rc.throttle = RC_BUFFER[2];
+                    pru0_data_struct->rc.yaw = RC_BUFFER[4];
+                    pru0_data_struct->rc.pitch = RC_BUFFER[3];
+                    pru0_data_struct->rc.roll = RC_BUFFER[1];
+                    pru0_data_struct->rc.aux1 = RC_BUFFER[6];
+                    pru0_data_struct->rc.aux2 = RC_BUFFER[5];
+                    pru0_data_struct->rc.aux3 = RC_BUFFER[7];
+                    pru0_data_struct->rc.aux4 = RC_BUFFER[8];
                     SEND_DATA_TO_P0(RC_DATA_MSG_TYPE);
                 }
             }

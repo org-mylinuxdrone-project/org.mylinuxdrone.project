@@ -106,7 +106,8 @@ void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro) {
 
     for(i = 0; i < 4; i++) {
         for(j = 0; j < 4; j++) {
-           F[i] += ((invA[i][j]*M[j]) >> 2); // invA corrisponde a 4*A^(-1)
+            // invA corrisponde a 4*A^(-1) per questo >> 2
+            F[i] += ((invA[i][j]*M[j]) >> 2);
         }
     }
     /* TODO:
