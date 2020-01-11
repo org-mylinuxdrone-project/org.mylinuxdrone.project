@@ -59,11 +59,11 @@
  * Stato: F, M, MErr, MIErr, MDErr, Throttle (F, MErr* inizializzati a zero, M inizializzato a [Gyro, Throttle])
  * Parametri: ke, ki, kd
  * Calcolo:
- * - MErr(i)=M(i-1)-[Gyro(i), Throttle(i-1)]
+ * - MErr(i)=Throttle(i)- Gyro(i)
  * - MIErr(i)=MIErr(i-1) + MIErr(i)
  * - MDErr(i)=(MErr(i) - MErr(i-1))*Freq (1KHz)
- * - M(i)=ke(RC(i)-[Gyro(i), Throttle(i-1)]+ke*MErr(i)) + ki*MIErr(i)+ kd*MDErr(i)
- * - F(i)=F(i-i) + inv(A)*M(i)
+ * - M(i)=+ke*MErr(i)) + ki*MIErr(i)+ kd*MDErr(i)
+ * - F(i)=inv(A)*M(i)
  * Output:F(i)
  *   l'output è inviato direttamente al controller motori.
  */
@@ -72,7 +72,7 @@ int16_t F[4] = {0}; // accumulato
 int16_t MErr[4] = {0};    // sostituito
 int16_t MIErr[4] = {0};   // accumulato
 int16_t MDErr[4] = {0};   // sostituito
-uint16_t ke = 0x0000;    // fix point 8 bits (0x0100 corrisponde a 1)
+uint16_t ke = 0x0080;    // fix point 8 bits (0x0100 corrisponde a 1)
 uint16_t ki = 0x0000;    // fix point 8 bits
 uint16_t kd = 0x0000;    // fix point 8 bits
 int16_t throttlePrev = 0;
@@ -91,18 +91,17 @@ int16_t M1 = 0;
 int16_t M2 = 0;
 int16_t M3 = 0;
 int16_t M4 = 0;
-int16_t gyroPrev[3] = {0};
 
 void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro) {
     uint8_t i = 0;
     uint8_t j = 0;
+    int16_t prevErr = 0;
     for(i = 0; i < 3; i++) {
-        int16_t prevErr = MErr[i];
-        MErr[i] = LIMIT(M[i] - (gyro[i] - gyroPrev[i]), 1000, -1000);
+        prevErr = MErr[i];
+        MErr[i] = rc[i] - gyro[i];
         MDErr[i] = MErr[i] - prevErr;
         MIErr[i] += MErr[i]; // <---TODO: Gestire limiti max, min
-        M[i] = (rc[i] - gyro[i]) + ((ke*MErr[i]) >> 8)+((ki*MIErr[i]) >> 8) + ((kd*MDErr[i]) >> 8);
-        gyroPrev[i] = gyro[i];
+        M[i] = ((ke*MErr[i]) >> 8)+((ki*MIErr[i]) >> 8) + ((kd*MDErr[i]) >> 8);
     }
 
     /* TODO:
@@ -113,9 +112,6 @@ void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro) {
     MDErr[POS_THROTTLE] = 0;
     MIErr[POS_THROTTLE] = 0;
     M[POS_THROTTLE] = rc[POS_THROTTLE];
-//    M[POS_THROTTLE] = rc[POS_THROTTLE] - throttlePrev;
-//    throttlePrev = rc[POS_THROTTLE];
-
     for(i = 0; i < 4; i++) {
         F[i] = 0;
         for(j = 0; j < 4; j++) {
