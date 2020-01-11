@@ -46,6 +46,18 @@
 #define POS_AUX4 7
 #endif
 
+
+#ifndef MAX
+#define MAX(A,B)                              (A > B ? A : B)
+#endif
+#ifndef MIN
+#define MIN(A,B)                              (A < B ? A : B)
+#endif
+#ifndef LIMIT
+#define LIMIT(V,MX,MN)                        (MAX((MN),MIN((V),(MX))))
+#endif
+
+
 void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro);
 
 #endif /* PRU_CONTROLLER_H_ */

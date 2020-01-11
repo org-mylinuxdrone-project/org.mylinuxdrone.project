@@ -164,10 +164,10 @@ int main(void)
                  * from (x, y, z) to (yaw, pitch, roll)
                  */
                 for(counter32 = 0; counter32 < 3; counter32++) {
-                    pru_rpmsg_accel[3-counter32] = received_pru1_data_struct->mpu_accel_gyro_vect.accel[counter32];
-                    pru_rpmsg_gyro[3-counter32] = received_pru1_data_struct->mpu_accel_gyro_vect.gyro[counter32];
+                    pru_rpmsg_accel[2-counter32] = received_pru1_data_struct->mpu_accel_gyro_vect.accel[counter32];
+                    pru_rpmsg_gyro[2-counter32] = received_pru1_data_struct->mpu_accel_gyro_vect.gyro[counter32];
                 }
-                pru_controller_apply(pru_rpmsg_gyro, pru_rpmsg_accel, pru_rpmsg_gyro);
+                pru_controller_apply(pru_rpmsg_rc, pru_rpmsg_accel, pru_rpmsg_gyro);
 
 
                 // nothing to do ... send data as is to the ARM
