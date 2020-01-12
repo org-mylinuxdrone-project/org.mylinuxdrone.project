@@ -11,7 +11,7 @@
 #include <linux/init.h>
 #include <linux/rpmsg.h>
 #include "mylinuxdrone.h"
-#include "pru_mylinuxdrone.h"
+#include "mld_messages.h"
 
 MODULE_LICENSE("Dual BSD/GPL");
 MODULE_AUTHOR("Andrea Lambruschini <andrea.lambruschini@gmail.com>");

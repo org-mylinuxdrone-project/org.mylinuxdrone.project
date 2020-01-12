@@ -44,6 +44,7 @@
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.DIAG_WRAP.294552496" name="Wrap diagnostic messages (--diag_wrap)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.DIAG_WRAP" useByScannerDiscovery="false" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.DIAG_WRAP.off" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.INCLUDE_PATH.841780464" name="Add dir to #include search path (--include_path, -I)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.INCLUDE_PATH" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../linux/drivers/mylinuxdrone"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../pru0/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../pru-software-support-package/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../pru-software-support-package/include/am335x"/>

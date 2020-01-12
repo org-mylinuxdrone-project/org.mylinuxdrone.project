@@ -183,7 +183,6 @@ uint8_t rc_receiver_intc_Init() {
  * Riceve in input un array di 8 elementi di tipo rc_receiver_chan_def_struct
  */
 void rc_receiver_set_conf(rc_receiver_chan_def_struct* conf) {
-    int16_t rawCenterRidotto = 0;
     for(_rc_receiver_counter8 = 0; _rc_receiver_counter8 < 8; _rc_receiver_counter8++) {
         rc_receiver_chan_def[_rc_receiver_counter8].rawMin = (conf[_rc_receiver_counter8].rawMin);
         rc_receiver_chan_def[_rc_receiver_counter8].rawMax = (conf[_rc_receiver_counter8].rawMax);

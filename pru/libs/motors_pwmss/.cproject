@@ -41,13 +41,14 @@
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.DIAG_WRAP.343159047" name="Wrap diagnostic messages (--diag_wrap)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.DIAG_WRAP" useByScannerDiscovery="false" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.DIAG_WRAP.off" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.INCLUDE_PATH.2046065254" name="Add dir to #include search path (--include_path, -I)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.INCLUDE_PATH" valueType="includePath">
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../pru0/include/"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../../linux/drivers/mylinuxdrone"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${CG_TOOL_ROOT}/include"/>
 								</option>
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.ENDIAN.491095737" name="Specify the endianness of both code and data [See 'General' page to edit] (--endian)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.ENDIAN" useByScannerDiscovery="false" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.ENDIAN.little" valueType="enumerated"/>
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_LEVEL.879822890" name="Optimization level (--opt_level, -O)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_LEVEL" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_LEVEL.2" valueType="enumerated"/>
-								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_FOR_SPEED.425668450" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_FOR_SPEED" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_FOR_SPEED.3" valueType="enumerated"/>
+								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_FOR_SPEED.425668450" name="Speed vs. size trade-offs (--opt_for_speed, -mf)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_FOR_SPEED" value="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.OPT_FOR_SPEED.3" valueType="enumerated"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__C_SRCS.155548215" name="C Sources" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__C_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__CPP_SRCS.1951063117" name="C++ Sources" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__CPP_SRCS"/>
 								<inputType id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__ASM_SRCS.1571847282" name="Assembly Sources" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compiler.inputType__ASM_SRCS"/>
@@ -132,7 +133,6 @@
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="motors_pwmss.com.ti.ccstudio.buildDefinitions.PRU.ProjectType.621441405" name="PRU" projectType="com.ti.ccstudio.buildDefinitions.PRU.ProjectType"/>
 	</storageModule>
-	<storageModule moduleId="scannerConfiguration"/>
 	<storageModule moduleId="org.eclipse.cdt.core.language.mapping">
 		<project-mappings>
 			<content-type-mapping configuration="" content-type="org.eclipse.cdt.core.asmSource" language="com.ti.ccstudio.core.TIASMLanguage"/>
@@ -142,4 +142,5 @@
 			<content-type-mapping configuration="" content-type="org.eclipse.cdt.core.cxxSource" language="com.ti.ccstudio.core.TIGPPLanguage"/>
 		</project-mappings>
 	</storageModule>
+	<storageModule moduleId="scannerConfiguration"/>
 </cproject>

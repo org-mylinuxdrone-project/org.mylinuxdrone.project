@@ -105,6 +105,14 @@ EXPORT_SYMBOL(unregister_mylinuxdrone_driver);
 /*****************************************************************************
  * Device's Life Cycle
  *****************************************************************************/
+void prepare_mylinuxdrone_device(struct mylinuxdrone_device *mlddev, const char* name, int id)
+{
+    strcpy(mlddev->id.name, name);
+    dev_set_name(&mlddev->dev, name);
+    mlddev->dev.id = id;
+}
+EXPORT_SYMBOL(prepare_mylinuxdrone_device);
+
 struct mylinuxdrone_device *alloc_mylinuxdrone_device(const char* name, int id)
 {
     struct mylinuxdrone_device *mlddev;
@@ -116,9 +124,7 @@ struct mylinuxdrone_device *alloc_mylinuxdrone_device(const char* name, int id)
         return NULL;
     }
 
-    strcpy(mlddev->id.name, name);
-    dev_set_name(&mlddev->dev, name);
-    mlddev->dev.id = id;
+    prepare_mylinuxdrone_device(mlddev, name, id);
     dev_dbg(&mlddev->dev, "device [%s] allocated \n",
             mlddev->id.name);
     return mlddev;

@@ -40,6 +40,7 @@ struct mylinuxdrone_driver {
 #define to_mylinuxdrone_driver(d) container_of(d, struct mylinuxdrone_driver, driver)
 #define to_mylinuxdrone_device(d) container_of(d, struct mylinuxdrone_device, dev)
 
+void prepare_mylinuxdrone_device(struct mylinuxdrone_device *mlddev, const char* name, int id);
 struct mylinuxdrone_device *alloc_mylinuxdrone_device(const char* name, int id);
 int register_mylinuxdrone_device(struct mylinuxdrone_device *mlddev);
 void unregister_mylinuxdrone_device(struct mylinuxdrone_device *mlddev);

@@ -45,6 +45,7 @@
 								<option id="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.INCLUDE_PATH.982446613" name="Add dir to #include search path (--include_path, -I)" superClass="com.ti.ccstudio.buildDefinitions.PRU_2.2.compilerID.INCLUDE_PATH" valueType="includePath">
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/controller/include"/>
+									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../linux/drivers/mylinuxdrone"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../../pru-software-support-package/include"/>
 									<listOptionValue builtIn="false" value="${PROJECT_ROOT}/../libs/pwmss/include"/>

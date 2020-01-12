@@ -12,7 +12,7 @@
 #include <linux/rpmsg.h>
 #include <linux/device.h>
 #include "mylinuxdrone.h"
-#include "pru_mylinuxdrone.h"
+#include "mld_messages.h"
 
 
 MODULE_LICENSE("Dual BSD/GPL");

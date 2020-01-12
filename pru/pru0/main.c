@@ -28,6 +28,8 @@ int16_t pru_rpmsg_accel[3] = {0};
 int16_t pru_rpmsg_gyro[3] = {0};
 int16_t pru_rpmsg_rc[8] = {0};
 
+uint8_t pru_rpmsg_rc_status_calibration = 0;
+
 static void prb_init_buffers()
 {
     for (counter32 = 0; counter32 < sizeof(PrbMessageType); counter32++)
@@ -259,6 +261,28 @@ int main(void)
                 case RC_DISABLE_MSG_TYPE:
                 {
                     src_rc_channel = src;
+                    break;
+                }
+                case RC_CALIBRATION_ENABLE_MSG_TYPE:
+                {
+                    src_rc_channel = src;
+                    pru_rpmsg_rc_status_calibration = 1;
+                    // send data from PRU0 to ARM
+                    received_pru1_data_struct->message_type = RC_CALIBRATION_ENABLED_MSG_TYPE;
+                    pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
+                                   src_rc_channel, received_pru1_data,
+                                   sizeof(PrbMessageType));
+                    break;
+                }
+                case RC_CALIBRATION_DISABLE_MSG_TYPE:
+                {
+                    src_rc_channel = src;
+                    pru_rpmsg_rc_status_calibration = 0;
+                    // send data from PRU0 to ARM
+                    received_pru1_data_struct->message_type = RC_CALIBRATION_DISABLED_MSG_TYPE;
+                    pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
+                                   src_rc_channel, received_pru1_data,
+                                   sizeof(PrbMessageType));
                     break;
                 }
                 case RC_CREATE_CHANNEL_MSG_TYPE:

@@ -1,8 +1,21 @@
 /*
  * mld_pru_rc_channel.c
+ *  Created on: 12 mag 2019
+ *      Author: Andrea Lambruschini <andrea.lambruschini@gmail.com>
  *
- *  Created on: 10 mag 2019
- *      Author: andrea
+ * Copyright 2019 Andrea Lambruschini
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -11,8 +24,8 @@
 #include <linux/init.h>
 #include <linux/rpmsg.h>
 #include <linux/device.h>
-#include "mylinuxdrone.h"
-#include "pru_mylinuxdrone.h"
+#include "mld_pru_rc_channel.h"
+#include "mld_messages.h"
 
 
 MODULE_LICENSE("Dual BSD/GPL");
@@ -21,12 +34,10 @@ MODULE_AUTHOR("Andrea Lambruschini <andrea.lambruschini@gmail.com>");
 #define MLD_PRU_RC_CHANNEL_NAME "mld-rc"
 
 /********************************************************************
- **************** MLD_PRU_RC_CHANNEL DRIVER SECTION ****************
+ **************** MLD_PRU_RC_CHANNEL DRIVER SECTION *****************
  ********************************************************************/
 static int mld_pru_rc_channel_probe(struct mylinuxdrone_device *mlddev) {
     printk(KERN_DEBUG "mld_pru_rc_channel_probe started...\n");
-    // TODO: Aggiornare status: 'Waiting for connection ...'
-    // TODO: inviare segnale agli observers
     return 0;
 }
 static void mld_pru_rc_channel_remove(struct mylinuxdrone_device *mlddev) {
@@ -35,16 +46,15 @@ static void mld_pru_rc_channel_remove(struct mylinuxdrone_device *mlddev) {
     rpdev = dev_get_drvdata(&mlddev->dev);
     if(rpdev != NULL) {
         dev_set_drvdata(&rpdev->dev, NULL);
-        // this rpmsg channel must remain active; we does not unregister it
-        // TODO: Aggiornare status: 'Connected without control'
-        // TODO: inviare segnale agli observers
     }
     printk(KERN_DEBUG "mld_pru_rc_channel_remove: device:[%s] removed\n", mlddev->id.name);
 }
+
 static void mld_pru_rc_channel_dev_release(struct device* dev) {
     struct mylinuxdrone_device *mlddev = to_mylinuxdrone_device(dev);
+
     printk(KERN_DEBUG "mld_pru_rc_channel_dev_release dev:[%s] ...\n", mlddev->id.name);
-    put_device(dev);
+    // TODO: kfree?
 }
 EXPORT_SYMBOL(mld_pru_rc_channel_dev_release);
 
@@ -59,6 +69,151 @@ static const struct mylinuxdrone_device_id arm_mylinuxdrone_pru_rc_id[] = {
         { },
 };
 MODULE_DEVICE_TABLE(mylinuxdrone, arm_mylinuxdrone_pru_rc_id);
+
+
+static int rc_start(struct mylinuxdrone_device *cntrl) {
+    struct mld_rc_device* rcd = to_mld_rc_device(cntrl);
+    struct rpmsg_device* rpdev;
+    unsigned char startMessage[sizeof(PrbMessageType)];
+    int ret;
+    printk(KERN_DEBUG "rc_start\n");
+    rpdev = dev_get_drvdata(&cntrl->dev);
+
+    ((PrbMessageType*)startMessage)->message_type = RC_ENABLE_MSG_TYPE;
+
+    ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
+    if (ret) {
+        dev_err(&cntrl->dev, "Failed sending start rc message to PRUs\n");
+        // TODO: Inviare un allarme su iio status
+     }
+    printk(KERN_DEBUG "rc_start: creation of pru_rc device requested.\n");
+
+    // Status: 'Started'
+    rcd->status.status = MLD_RC_DEVICE_STATUS_STARTED;
+    return 0;
+}
+static int rc_stop(struct mylinuxdrone_device *cntrl) {
+    struct mld_rc_device* rcd = to_mld_rc_device(cntrl);
+    struct rpmsg_device* rpdev;
+    unsigned char startMessage[sizeof(PrbMessageType)];
+    int ret;
+    printk(KERN_DEBUG "rc_stop\n");
+
+    rpdev = dev_get_drvdata(&cntrl->dev);
+
+    ((PrbMessageType*)startMessage)->message_type = RC_DISABLE_MSG_TYPE;
+
+    ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
+    if (ret) {
+        dev_err(&cntrl->dev, "Failed sending stop rc message to PRUs\n");
+        // TODO: Inviare un allarme su iio buffer
+     }
+    printk(KERN_DEBUG "rc_stop: stop of pru_rc device requested.\n");
+
+    // Status: 'Stopped'
+    rcd->status.status = MLD_RC_DEVICE_STATUS_STOPPED;
+    return 0;
+}
+
+static ssize_t rc_start_store(struct device *dev,
+                            struct device_attribute *attr,
+                            const char *buf, size_t len)
+{
+        struct mylinuxdrone_device *ch = to_mylinuxdrone_device(dev);
+        unsigned int enable;
+        int ret;
+
+        ret = kstrtouint(buf, 0, &enable);
+        if (ret < 0)
+                return ret;
+        if (enable > 1)
+                return -EINVAL;
+
+        if(enable == 1) {
+            rc_start(ch);
+            printk(KERN_INFO "pru_rc_store: started.\n");
+        } else {
+            rc_stop(ch);
+            printk(KERN_INFO "pru_rc_store: stopped.\n");
+        }
+        return ret ? : len;
+}
+static DEVICE_ATTR_WO(rc_start);
+
+
+static int rc_start_calibration(struct mylinuxdrone_device *cntrl) {
+    struct mld_rc_device* rcd = to_mld_rc_device(cntrl);
+    struct rpmsg_device* rpdev;
+    unsigned char startMessage[sizeof(PrbMessageType)];
+    int ret;
+    printk(KERN_DEBUG "rc_start_calibration\n");
+    rpdev = dev_get_drvdata(&cntrl->dev);
+
+    ((PrbMessageType*)startMessage)->message_type = RC_CALIBRATION_ENABLE_MSG_TYPE;
+
+    ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
+    if (ret) {
+        dev_err(&cntrl->dev, "Failed sending start rc message to PRUs\n");
+        // TODO: Inviare un allarme su iio buffer
+     }
+    printk(KERN_DEBUG "rc_start_calibration: start calibration requested.\n");
+
+    rcd->status.status = MLD_RC_DEVICE_STATUS_CALIBRATION_STARTING;
+    return 0;
+}
+static int rc_stop_calibration(struct mylinuxdrone_device *cntrl) {
+    struct mld_rc_device* rcd = to_mld_rc_device(cntrl);
+    struct rpmsg_device* rpdev;
+    unsigned char startMessage[sizeof(PrbMessageType)];
+    int ret;
+    printk(KERN_DEBUG "rc_stop_calibration\n");
+
+    rpdev = dev_get_drvdata(&cntrl->dev);
+
+    ((PrbMessageType*)startMessage)->message_type = RC_CALIBRATION_DISABLE_MSG_TYPE;
+
+    ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
+    if (ret) {
+        dev_err(&cntrl->dev, "Failed sending stop rc message to PRUs\n");
+        // TODO: Inviare un allarme su iio buffer
+     }
+    printk(KERN_DEBUG "rc_stop_calibration: stop calibration requested.\n");
+
+    rcd->status.status = MLD_RC_DEVICE_STATUS_CALIBRATION_STOPPING;
+    return 0;
+}
+
+static ssize_t rc_start_calibration_store(struct device *dev,
+                            struct device_attribute *attr,
+                            const char *buf, size_t len)
+{
+        struct mylinuxdrone_device *ch = to_mylinuxdrone_device(dev);
+        unsigned int enable;
+        int ret;
+
+        ret = kstrtouint(buf, 0, &enable);
+        if (ret < 0)
+                return ret;
+        if (enable > 1)
+                return -EINVAL;
+
+        if(enable == 1) {
+            rc_start_calibration(ch);
+            printk(KERN_INFO "rc_start_calibration_store: started.\n");
+        } else {
+            rc_stop_calibration(ch);
+            printk(KERN_INFO "rc_stop_calibration_store: stopped.\n");
+        }
+        return ret ? : len;
+}
+static DEVICE_ATTR_WO(rc_start_calibration);
+
+static struct attribute *pru_rc_attrs[] = {
+        &dev_attr_rc_start.attr,
+        &dev_attr_rc_start_calibration.attr,
+        NULL,
+};
+ATTRIBUTE_GROUPS(pru_rc);
 
 /********************************************************************
  *********************** RPMSG DRIVER SECTION ***********************
@@ -81,78 +236,6 @@ static const struct device_type pru_channel_type = {
         .name           = "pru_rc_channel",
 };
 
-static int rc_start(struct mylinuxdrone_device *cntrl) {
-    struct rpmsg_device* rpdev;
-    unsigned char startMessage[sizeof(PrbMessageType)];
-    int ret;
-    printk(KERN_DEBUG "rc_start\n");
-    rpdev = dev_get_drvdata(&cntrl->dev);
-
-    ((PrbMessageType*)startMessage)->message_type = RC_ENABLE_MSG_TYPE;
-
-    ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
-    if (ret) {
-        dev_err(&cntrl->dev, "Failed sending start rc message to PRUs\n");
-        // TODO: Inviare un allarme su iio status
-     }
-    printk(KERN_DEBUG "rc_start: creation of pru_rc device requested.\n");
-    // TODO: Aggiornare status: 'Started'
-    return 0;
-}
-static int rc_stop(struct mylinuxdrone_device *cntrl) {
-    struct rpmsg_device* rpdev;
-    unsigned char startMessage[sizeof(PrbMessageType)];
-    int ret;
-    printk(KERN_DEBUG "rc_stop\n");
-
-    rpdev = dev_get_drvdata(&cntrl->dev);
-
-    ((PrbMessageType*)startMessage)->message_type = RC_DISABLE_MSG_TYPE;
-
-    ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
-    if (ret) {
-        dev_err(&cntrl->dev, "Failed sending stop rc message to PRUs\n");
-        // TODO: Inviare un allarme su iio buffer
-     }
-    printk(KERN_DEBUG "rc_stop: stop of pru_rc device requested.\n");
-    // TODO: Aggiornare status: 'Stopped'
-
-    return 0;
-}
-
-static ssize_t rc_start_store(struct device *dev,
-                            struct device_attribute *attr,
-                            const char *buf, size_t len)
-{
-        struct mylinuxdrone_device *ch = to_mylinuxdrone_device(dev);
-        unsigned int enable;
-        int ret;
-
-        ret = kstrtouint(buf, 0, &enable);
-        if (ret < 0)
-                return ret;
-        if (enable > 1)
-                return -EINVAL;
-
-        if(enable == 1) {
-            // TODO: inviare messaggio di start
-            rc_start(ch);
-            printk(KERN_INFO "pru_rc_store: started.\n");
-        } else {
-            // TODO: inviare messaggio di stop
-            rc_stop(ch);
-            printk(KERN_INFO "pru_rc_store: stopped.\n");
-        }
-        return ret ? : len;
-}
-static DEVICE_ATTR_WO(rc_start);
-
-static struct attribute *pru_rc_attrs[] = {
-        &dev_attr_rc_start.attr,
-        NULL,
-};
-ATTRIBUTE_GROUPS(pru_rc);
-
 /**
  * pru_rc_driver_cb() - function gets invoked each time the pru sends some
  * data.
@@ -160,11 +243,77 @@ ATTRIBUTE_GROUPS(pru_rc);
 static int pru_rc_driver_cb(struct rpmsg_device *rpdev, void *data,
                   int len, void *priv, u32 src)
 {
-    printk(KERN_DEBUG "pru_rc_driver_cb [%s].\n", rpdev->id.name);
-    // TODO: trasmettere il messaggio agli observers
+    struct mylinuxdrone_device* mlddev = dev_get_drvdata(&rpdev->dev);
+    struct mld_rc_device* rcdev = to_mld_rc_device(mlddev);
+
+    PrbMessageType* dataStruct = (PrbMessageType*)data;
+    printk(KERN_INFO "RC message type: [%d]\n", dataStruct->message_type);
+
+    switch (dataStruct->message_type){
+      case RC_CALIBRATION_ENABLED_MSG_TYPE:
+      {
+        rcdev->status.status = MLD_RC_DEVICE_STATUS_CALIBRATING;
+        printk(KERN_DEBUG "RC status: CALIBRATING\n");
+        break;
+      }
+      case RC_CALIBRATION_DISABLED_MSG_TYPE:
+      {
+          rcdev->status.status = MLD_RC_DEVICE_STATUS_STARTED;
+          printk(KERN_DEBUG "RC status: STARTED\n");
+          break;
+      }
+      case RC_DATA_MSG_TYPE: {
+          printk(KERN_DEBUG "RC_TYPR12: [%d, %d, %d, %d, %d, %d].\n", dataStruct->rc.throttle, dataStruct->rc.yaw, dataStruct->rc.pitch, dataStruct->rc.roll, dataStruct->rc.aux1, dataStruct->rc.aux2);
+          break;
+      }
+      default: {
+          printk(KERN_DEBUG "pru_rc_driver_cb unknown message from [%s].\n", rpdev->id.name);
+      }
+    }
     return 0;
 }
 
+void prepare_mld_rc_device(struct mld_rc_device *rcdev, const char* name, int id)
+{
+    int8_t i = 0;
+    prepare_mylinuxdrone_device(&rcdev->dev, name, id);
+    rcdev->status.data.throttle = 0;
+    rcdev->status.data.yaw = 0;
+    rcdev->status.data.pitch = 0;
+    rcdev->status.data.roll = 0;
+    rcdev->status.data.aux1 = 0;
+    rcdev->status.data.aux2 = 0;
+    rcdev->status.data.aux3 = 0;
+    rcdev->status.data.aux4 = 0;
+
+    for(i = 0; i < 8; i++) {
+        rcdev->status.config[i].rawMin = 0;
+        rcdev->status.config[i].rawCenter = 0;
+        rcdev->status.config[i].rawMax = 0;
+        rcdev->status.config[i].min = 0;
+        rcdev->status.config[i].max = 0;
+        rcdev->status.config[i].radius = 0;
+        rcdev->status.config[i].factor = 0;
+    }
+}
+EXPORT_SYMBOL(prepare_mld_rc_device);
+
+struct mld_rc_device *alloc_mld_rc_device(const char* name, int id)
+{
+    struct mld_rc_device *rcdev;
+    rcdev = kzalloc(sizeof(*rcdev), GFP_KERNEL);
+    if (!rcdev) {
+        dev_err(&rcdev->dev.dev, "Failed mld_rc device creation [%s]\n",
+                         name);
+        kfree(rcdev);
+        return NULL;
+    }
+    prepare_mld_rc_device(rcdev, name, id);
+    dev_dbg(&rcdev->dev.dev, "device [%s] allocated \n",
+            rcdev->dev.id.name);
+    return rcdev;
+}
+EXPORT_SYMBOL(alloc_mld_rc_device);
 /**
  * pru_rc_driver_probe() - function gets invoked when the rpmsg channel
  * as mentioned in the pru_rc_id table
@@ -172,44 +321,38 @@ static int pru_rc_driver_cb(struct rpmsg_device *rpdev, void *data,
 static int pru_rc_driver_probe(struct rpmsg_device *rpdev)
 {
     int ret;
-    struct mylinuxdrone_device *st;
-    st = alloc_mylinuxdrone_device(MLD_PRU_RC_CHANNEL_NAME, 0);
-    // TODO: Aggiornare lo status: 'Connecting ...'
-    // TODO: inviare segnale agli observers
+    struct mld_rc_device *st;
+    st = alloc_mld_rc_device(MLD_PRU_RC_CHANNEL_NAME, 0);
 
     printk(KERN_DEBUG "pru_rc_driver_probe [%s].\n", rpdev->id.name);
     // FIXME: verificare se device già creato.
     printk(KERN_DEBUG "pru_rc_driver_probe device created.\n");
 
     printk(KERN_DEBUG "pru_rc_driver_probe allocated memory.\n");
-    st->dev.type = &pru_channel_type;
-    st->dev.devt = MKDEV(0, 0);
-    st->dev.groups = pru_rc_groups;
-    st->dev.release = mld_pru_rc_channel_dev_release;
+    st->dev.dev.type = &pru_channel_type;
+    st->dev.dev.devt = MKDEV(0, 0);
+    st->dev.dev.groups = pru_rc_groups;
+    st->dev.dev.release = mld_pru_rc_channel_dev_release;
     printk(KERN_DEBUG "pru_rc_driver_probe pru_rc device prepared.\n");
 
     /* devices's circular reference
        must be set before register_mylinuxdrone_device to avoid
        a loop that create a new rpmsg_channel when register mylinuxdrone device
      */
-    dev_set_drvdata(&rpdev->dev, st);
-    dev_set_drvdata(&st->dev, rpdev);
+    dev_set_drvdata(&rpdev->dev, &st->dev);
+    dev_set_drvdata(&st->dev.dev, rpdev);
 
     // registra il nuovo device
     printk(KERN_DEBUG "pru_rc_driver_probe registering pru_rc device... \n");
-    ret = register_mylinuxdrone_device(st);
+    ret = register_mylinuxdrone_device(&st->dev);
     if (ret) {
        printk(KERN_ERR "pru_rc_driver_probe pru_rc device registration failed.\n");
-       // TODO: Inviare un allarme su iio buffer
-       // TODO: inviare segnale agli observers
        kfree(st);
        return ret;
     }
     printk(KERN_DEBUG "pru_rc_driver_probe pru_rc device registered \n");
 
-    // TODO: Aggiornare lo status: 'Connected'
-    // TODO: inviare segnale agli observers
-
+    st->status.status = MLD_RC_DEVICE_STATUS_ENABLED;
     return 0;
 }
 
@@ -227,8 +370,6 @@ static void pru_rc_driver_remove(struct rpmsg_device *rpdev)
         dev_set_drvdata(&cntr->dev, NULL);
         unregister_mylinuxdrone_device(cntr);
     }
-    // TODO: Aggiornare lo status: 'Disconnected'
-    // TODO: inviare segnale agli observers
 }
 
 static struct pru_rc_driver mld_pru_rc_channel_driver = {
