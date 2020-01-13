@@ -245,6 +245,7 @@ static int pru_rc_driver_cb(struct rpmsg_device *rpdev, void *data,
 {
     struct mylinuxdrone_device* mlddev = dev_get_drvdata(&rpdev->dev);
     struct mld_rc_device* rcdev = to_mld_rc_device(mlddev);
+    int i = 0;
 
     PrbMessageType* dataStruct = (PrbMessageType*)data;
     printk(KERN_INFO "RC message type: [%d]\n", dataStruct->message_type);
@@ -264,25 +265,25 @@ static int pru_rc_driver_cb(struct rpmsg_device *rpdev, void *data,
           printk(KERN_DEBUG "RC status: STARTED\n");
 
           // send get rc configuration request to pru
-          ((PrbMessageType*)startMessage)->message_type = RC_ENABLE_MSG_TYPE;
+          ((PrbMessageType*)startMessage)->message_type = RC_GET_CONFIG_MSG_TYPE;
           ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
           if (ret) {
-              printk(KERN_ERROR "Sorry!! cannot get rc configuration from pru [err=%d]\n", ret);
+              printk(KERN_ERR "Sorry!! cannot get rc configuration from pru [err=%d]\n", ret);
            }
           break;
       }
       case RC_CONFIG_DATA_MSG_TYPE: {
           PrbConfigMessageType* rcConfig = (PrbConfigMessageType*)dataStruct;
-          for(int i = 0; i < 8; i++) {
+          for(i = 0; i < 8; i++) {
               printk(KERN_DEBUG "RC_CNF[%d]: [%d, %d, %d, %d, %d, %d, %d].\n",
                      i,
-                     rcConfig->rc_config.chan[i].rawMin,
-                     rcConfig->rc_config.chan[i].rawCenter,
-                     rcConfig->rc_config.chan[i].rawMax,
-                     rcConfig->rc_config.chan[i].min,
-                     rcConfig->rc_config.chan[i].max,
-                     rcConfig->rc_config.chan[i].radius,
-                     rcConfig->rc_config.chan[i].factor
+                     rcConfig->rc_config_chan[i].rawMin,
+                     rcConfig->rc_config_chan[i].rawCenter,
+                     rcConfig->rc_config_chan[i].rawMax,
+                     rcConfig->rc_config_chan[i].min,
+                     rcConfig->rc_config_chan[i].max,
+                     rcConfig->rc_config_chan[i].radius,
+                     rcConfig->rc_config_chan[i].factor
                      );
           }
           break;
@@ -292,7 +293,7 @@ static int pru_rc_driver_cb(struct rpmsg_device *rpdev, void *data,
           break;
       }
       default: {
-          printk(KERN_DEBUG "pru_rc_driver_cb unknown message from [%s].\n", rpdev->id.name);
+          printk(KERN_DEBUG "pru_rc_driver_cb unknown message [%d] from [%s].\n", dataStruct->message_type, rpdev->id.name);
       }
     }
     return 0;

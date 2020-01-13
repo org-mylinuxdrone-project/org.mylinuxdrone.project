@@ -243,8 +243,7 @@ int main(void)
                         received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8] =
                                 (rc_receiver_chan_def[pru_rpmsg_counter8].factor
                                         * (LIMIT(
-                                                (received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8]
-                                                        >> 7),
+                                                (received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8]),
                                                 rc_receiver_chan_def[pru_rpmsg_counter8].max,
                                                 rc_receiver_chan_def[pru_rpmsg_counter8].min)
                                                 - rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter))
@@ -264,16 +263,15 @@ int main(void)
                             pru_rpmsg_counter8++)
                     {
                         pru_rpmsg_rc_chan_temp =
-                                (received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8]
-                                        >> 10);
+                                received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8];
                         if (pru_rpmsg_rc_chan_temp
-                                < (rc_receiver_chan_def[pru_rpmsg_counter8].rawMin))
+                                < rc_receiver_chan_def[pru_rpmsg_counter8].rawMin)
                         {
                             rc_receiver_chan_def[pru_rpmsg_counter8].rawMin =
                                     pru_rpmsg_rc_chan_temp;
                         }
                         else if (pru_rpmsg_rc_chan_temp
-                                > (rc_receiver_chan_def[pru_rpmsg_counter8].rawMax))
+                                > rc_receiver_chan_def[pru_rpmsg_counter8].rawMax)
                         {
                             rc_receiver_chan_def[pru_rpmsg_counter8].rawMax =
                                     pru_rpmsg_rc_chan_temp;
@@ -380,7 +378,7 @@ int main(void)
                                    sizeof(PrbMessageType));
 
                     // reset rc chan configuration
-                    for (pru_rpmsg_counter8 = 1; pru_rpmsg_counter8 < 9;
+                    for (pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8;
                             pru_rpmsg_counter8++)
                     {
                         pru_rpmsg_rc_chan_temp =
@@ -431,16 +429,16 @@ int main(void)
                 case RC_GET_CONFIG_MSG_TYPE: {
                     src_rc_channel = src;
                     // send rc config data from PRU0 to ARM
-                    received_pru1_data_struct->message_type =
+                    pru_rpmsg_config_data_struct->message_type =
                             RC_CONFIG_DATA_MSG_TYPE;
                     for(pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8; pru_rpmsg_counter8++) {
-                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].rawMin = rc_receiver_chan_def[pru_rpmsg_counter8].rawMin;
-                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].rawMax = rc_receiver_chan_def[pru_rpmsg_counter8].rawMax;
-                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].rawCenter = rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter;
-                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].min = rc_receiver_chan_def[pru_rpmsg_counter8].min;
-                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].max = rc_receiver_chan_def[pru_rpmsg_counter8].max;
-                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].radius = rc_receiver_chan_def[pru_rpmsg_counter8].radius;
-                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].factor = rc_receiver_chan_def[pru_rpmsg_counter8].factor;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].rawMin = rc_receiver_chan_def[pru_rpmsg_counter8].rawMin;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].rawMax = rc_receiver_chan_def[pru_rpmsg_counter8].rawMax;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].rawCenter = rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].min = rc_receiver_chan_def[pru_rpmsg_counter8].min;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].max = rc_receiver_chan_def[pru_rpmsg_counter8].max;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].radius = rc_receiver_chan_def[pru_rpmsg_counter8].radius;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].factor = rc_receiver_chan_def[pru_rpmsg_counter8].factor;
                     }
                     pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
                                    src_rc_channel, pru_rpmsg_config_data_struct,

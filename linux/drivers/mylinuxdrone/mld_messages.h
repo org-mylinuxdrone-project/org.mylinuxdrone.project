@@ -114,8 +114,6 @@ typedef struct
 typedef struct {
     uint32_t message_type;
     union {
-        struct
-        {
             struct
             {
                 int16_t rawMin;
@@ -125,8 +123,7 @@ typedef struct {
                 int16_t max;
                 int16_t radius;
                 uint16_t factor;
-            } chan[8];
-        } rc_config;
+            } rc_config_chan[8];
     };
 } PrbConfigMessageType;
 
