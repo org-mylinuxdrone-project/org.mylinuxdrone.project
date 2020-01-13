@@ -88,17 +88,6 @@ void      rc_receiver_switch_edma_Buffer();
 #define LIMIT(V,MX,MN)                        (MAX((MN),MIN((V),(MX))))
 #endif
 
-typedef struct {
-    int16_t rawMin;
-    int16_t rawCenter;
-    int16_t rawMax;
-    int16_t min;
-    int16_t max;
-    int16_t radius;
-    uint16_t factor;
-} rc_receiver_chan_def_struct;
-
-void rc_receiver_set_conf(rc_receiver_chan_def_struct* conf);
 uint8_t rc_receiver_Init();
 void    rc_receiver_clean_Interrupts();
 uint8_t rc_receiver_Start();

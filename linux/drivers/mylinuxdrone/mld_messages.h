@@ -64,6 +64,9 @@ typedef struct
             int16_t aux4;
         } rc;
         struct {
+            int16_t chan[8];
+        } rc_array;
+        struct {
             uint16_t m1;
             uint16_t m2;
             uint16_t m3;

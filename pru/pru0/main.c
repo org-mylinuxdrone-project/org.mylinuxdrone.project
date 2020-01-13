@@ -24,11 +24,71 @@ int counter32 = 0;
 uint8_t pru_rpmsg_imu_data_changed_flag = 0;
 uint8_t pru_rpmsg_rc_data_changed_flag = 0;
 
-int16_t pru_rpmsg_accel[3] = {0};
-int16_t pru_rpmsg_gyro[3] = {0};
-int16_t pru_rpmsg_rc[8] = {0};
+int16_t pru_rpmsg_accel[3] = { 0 };
+int16_t pru_rpmsg_gyro[3] = { 0 };
+int16_t pru_rpmsg_rc[8] = { 0 };
+
+/*******************************************************************************
+ * RC Definitions
+ *******************************************************************************/
+
+typedef struct
+{
+    int16_t rawMin;
+    int16_t rawCenter;
+    int16_t rawMax;
+    int16_t min;
+    int16_t max;
+    int16_t radius;
+    uint16_t factor;
+} rc_receiver_chan_def_struct;
 
 uint8_t pru_rpmsg_rc_status_calibration = 0;
+uint8_t pru_rpmsg_counter8 = 0;
+int16_t pru_rpmsg_rc_chan_temp = 0;
+
+rc_receiver_chan_def_struct rc_receiver_chan_def[8] = {
+// TODO: configurazione di default (riprendere dai dati rilevati in bbb)
+        { 1131, 1878, 2630, 1131, 2625, 747, 44918 }, // roll
+        { 1084, 1886, 2631, 1141, 2631, 745, 45038 }, // throttle
+        { 1128, 1842, 2519, 1165, 2519, 677, 49562 }, // pitch
+        { 1082, 1844, 2598, 1090, 2598, 754, 44501 }, // yaw
+        { 1081, 1855, 2629, 1081, 2629, 774, 43351 }, // aux2
+        { 1081, 1855, 2629, 1081, 2629, 774, 43351 }, // aux1
+        { 1081, 1855, 2629, 1081, 2629, 774, 43351 }, // aux3
+        { 1081, 1855, 2629, 1081, 2629, 774, 43351 }  // aux4
+};
+
+/*
+ * Riceve in input un array di 8 elementi di tipo rc_receiver_chan_def_struct
+ */
+void rc_receiver_set_conf(rc_receiver_chan_def_struct* conf)
+{
+    for (pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8; pru_rpmsg_counter8++)
+    {
+        rc_receiver_chan_def[pru_rpmsg_counter8].rawMin =
+                (conf[pru_rpmsg_counter8].rawMin);
+        rc_receiver_chan_def[pru_rpmsg_counter8].rawMax =
+                (conf[pru_rpmsg_counter8].rawMax);
+        rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter =
+                (conf[pru_rpmsg_counter8].rawCenter);
+
+        rc_receiver_chan_def[pru_rpmsg_counter8].radius = MIN(
+                abs(rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
+                        - (rc_receiver_chan_def[pru_rpmsg_counter8].rawMin)),
+                abs(rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
+                        - (rc_receiver_chan_def[pru_rpmsg_counter8].rawMax)));
+
+        rc_receiver_chan_def[pru_rpmsg_counter8].min =
+                rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
+                        - rc_receiver_chan_def[pru_rpmsg_counter8].radius;
+        rc_receiver_chan_def[pru_rpmsg_counter8].max =
+                rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
+                        + rc_receiver_chan_def[pru_rpmsg_counter8].radius;
+        rc_receiver_chan_def[pru_rpmsg_counter8].factor = ((uint32_t) 65535
+                << 10) / (rc_receiver_chan_def[pru_rpmsg_counter8].radius << 1);
+    }
+}
 
 static void prb_init_buffers()
 {
@@ -159,18 +219,20 @@ int main(void)
 //                        PWMSS_DEVICE_REAR,
 //                        pru_rpmsg_motors_ptr[PRB_MOTORS_REAR_LEFT - 1],
 //                        pru_rpmsg_motors_ptr[PRB_MOTORS_REAR_RIGHT - 1]);
-
                 /*
                  * Map accel/gyro sensor data to accel/gyro pid data
                  * The accel/gyro sensor data have an inverted order respect to pid data.
                  * from (x, y, z) to (yaw, pitch, roll)
                  */
-                for(counter32 = 0; counter32 < 3; counter32++) {
-                    pru_rpmsg_accel[2-counter32] = received_pru1_data_struct->mpu_accel_gyro_vect.accel[counter32];
-                    pru_rpmsg_gyro[2-counter32] = received_pru1_data_struct->mpu_accel_gyro_vect.gyro[counter32];
+                for (counter32 = 0; counter32 < 3; counter32++)
+                {
+                    pru_rpmsg_accel[2 - counter32] =
+                            received_pru1_data_struct->mpu_accel_gyro_vect.accel[counter32];
+                    pru_rpmsg_gyro[2 - counter32] =
+                            received_pru1_data_struct->mpu_accel_gyro_vect.gyro[counter32];
                 }
-                pru_controller_apply(pru_rpmsg_rc, pru_rpmsg_accel, pru_rpmsg_gyro);
-
+                pru_controller_apply(pru_rpmsg_rc, pru_rpmsg_accel,
+                                     pru_rpmsg_gyro);
 
                 // nothing to do ... send data as is to the ARM
                 // send data from PRU1 to ARM
@@ -184,11 +246,79 @@ int main(void)
             } // end case MPU_DATA_MSG_TYPE
             case RC_DATA_MSG_TYPE:
             {
+                /*
+                 * TODO: mettere in scala [-32768, +32767]
+                 * - In configurazione:
+                 *   - Ogni channel è definito da:
+                 *    - rawMin,
+                 *    - center,
+                 *    - rawMax,
+                 *    - min = center - radius,
+                 *    - max = rawMax,
+                 *    - radius = min(|center - rawMin|, |rawMax - center|),
+                 *    - factor = (65535*2^10)/(2*radius[chan]) )
+                 * - Il valore rilevato viene trasformato in:
+                 *   - scaledValue = (factor*CENTER(LIMIT(min, max, rawValue), center)) >> 10
+                 */
+                if (pru_rpmsg_rc_status_calibration == 0)
+                {
+                    // scale rc values
+                    for (pru_rpmsg_counter8 = 1; pru_rpmsg_counter8 < 9;
+                            pru_rpmsg_counter8++)
+                    {
+                        received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8] =
+                                (rc_receiver_chan_def[pru_rpmsg_counter8].factor
+                                        * (LIMIT(
+                                                (received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8]
+                                                        >> 7),
+                                                rc_receiver_chan_def[pru_rpmsg_counter8].max,
+                                                rc_receiver_chan_def[pru_rpmsg_counter8].min)
+                                                - rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter))
+                                        >> 10;
+                    }
+                    // scale throttle from [-32768, 32767] to [0, 32767]
+                    received_pru1_data_struct->rc.throttle = MAX(
+                            0,
+                            (received_pru1_data_struct->rc.throttle >> 1)
+                                    + 16384);
+                }
+                else
+                {
+                    // calc rawMin, rawMax, rawCenter values
+                    // NOTA: calibration must be started with stick on the center position
+                    for (pru_rpmsg_counter8 = 1; pru_rpmsg_counter8 < 9;
+                            pru_rpmsg_counter8++)
+                    {
+                        pru_rpmsg_rc_chan_temp =
+                                (received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8]
+                                        >> 10);
+                        if (pru_rpmsg_rc_chan_temp
+                                < (rc_receiver_chan_def[pru_rpmsg_counter8].rawMin))
+                        {
+                            rc_receiver_chan_def[pru_rpmsg_counter8].rawMin =
+                                    pru_rpmsg_rc_chan_temp;
+                        }
+                        else if (pru_rpmsg_rc_chan_temp
+                                > (rc_receiver_chan_def[pru_rpmsg_counter8].rawMax))
+                        {
+                            rc_receiver_chan_def[pru_rpmsg_counter8].rawMax =
+                                    pru_rpmsg_rc_chan_temp;
+                        }
+                        else if (rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
+                                == 0)
+                        {
+                            rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter =
+                                    pru_rpmsg_rc_chan_temp;
+                        }
+                    }
+                }
+
                 // Map rc channels from sensor to pid order
                 pru_rpmsg_rc[POS_YAW] = received_pru1_data_struct->rc.yaw;
                 pru_rpmsg_rc[POS_PITCH] = received_pru1_data_struct->rc.pitch;
                 pru_rpmsg_rc[POS_ROLL] = received_pru1_data_struct->rc.roll;
-                pru_rpmsg_rc[POS_THROTTLE] = received_pru1_data_struct->rc.throttle;
+                pru_rpmsg_rc[POS_THROTTLE] =
+                        received_pru1_data_struct->rc.throttle; // MAX(0, (RC_BUFFER[2] >> 1)+16384);
                 pru_rpmsg_rc[POS_AUX1] = received_pru1_data_struct->rc.aux1;
                 pru_rpmsg_rc[POS_AUX2] = received_pru1_data_struct->rc.aux2;
                 pru_rpmsg_rc[POS_AUX3] = received_pru1_data_struct->rc.aux3;
@@ -236,7 +366,7 @@ int main(void)
                 case MPU_CREATE_CHANNEL_MSG_TYPE:
                 {
                     while (pru_rpmsg_channel(RPMSG_NS_CREATE, &transport,
-                                             RPMSG_MPU_CHAN_NAME,
+                    RPMSG_MPU_CHAN_NAME,
                                              RPMSG_MPU_CHAN_DESC,
                                              RPMSG_MPU_CHAN_PORT)
                             != PRU_RPMSG_SUCCESS)
@@ -246,7 +376,7 @@ int main(void)
                 case MPU_DESTROY_CHANNEL_MSG_TYPE:
                 {
                     while (pru_rpmsg_channel(RPMSG_NS_DESTROY, &transport,
-                                             RPMSG_MPU_CHAN_NAME,
+                    RPMSG_MPU_CHAN_NAME,
                                              RPMSG_MPU_CHAN_DESC,
                                              RPMSG_MPU_CHAN_PORT)
                             != PRU_RPMSG_SUCCESS)
@@ -267,28 +397,67 @@ int main(void)
                 {
                     src_rc_channel = src;
                     pru_rpmsg_rc_status_calibration = 1;
+
                     // send data from PRU0 to ARM
-                    received_pru1_data_struct->message_type = RC_CALIBRATION_ENABLED_MSG_TYPE;
+                    received_pru1_data_struct->message_type =
+                            RC_CALIBRATION_ENABLED_MSG_TYPE;
                     pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
                                    src_rc_channel, received_pru1_data,
                                    sizeof(PrbMessageType));
+
+                    // reset rc chan configuration
+                    for (pru_rpmsg_counter8 = 1; pru_rpmsg_counter8 < 9;
+                            pru_rpmsg_counter8++)
+                    {
+                        pru_rpmsg_rc_chan_temp =
+                                (received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8]
+                                        >> 10);
+                        rc_receiver_chan_def[pru_rpmsg_counter8].rawMin = 32767;
+                        rc_receiver_chan_def[pru_rpmsg_counter8].rawMax =
+                                -32768;
+                        rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter = 0;
+                    }
                     break;
                 }
                 case RC_CALIBRATION_DISABLE_MSG_TYPE:
                 {
                     src_rc_channel = src;
-                    pru_rpmsg_rc_status_calibration = 0;
                     // send data from PRU0 to ARM
-                    received_pru1_data_struct->message_type = RC_CALIBRATION_DISABLED_MSG_TYPE;
+                    received_pru1_data_struct->message_type =
+                            RC_CALIBRATION_DISABLED_MSG_TYPE;
                     pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
                                    src_rc_channel, received_pru1_data,
                                    sizeof(PrbMessageType));
+
+                    if (pru_rpmsg_rc_status_calibration)
+                    {
+                        // calc rc radius, min, max
+                        for (pru_rpmsg_counter8 = 1; pru_rpmsg_counter8 < 9;
+                                pru_rpmsg_counter8++)
+                        {
+                            rc_receiver_chan_def[pru_rpmsg_counter8].radius =
+                                    MAX(0,
+                                        MIN(rc_receiver_chan_def[pru_rpmsg_counter8].rawMax - rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter, rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter - rc_receiver_chan_def[pru_rpmsg_counter8].rawMin));
+                            rc_receiver_chan_def[pru_rpmsg_counter8].min =
+                                    rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
+                                            - rc_receiver_chan_def[pru_rpmsg_counter8].radius;
+                            rc_receiver_chan_def[pru_rpmsg_counter8].max =
+                                    rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
+                                            + rc_receiver_chan_def[pru_rpmsg_counter8].radius;
+                            rc_receiver_chan_def[pru_rpmsg_counter8].factor =
+                                    (65535 << 10)
+                                            / (rc_receiver_chan_def[pru_rpmsg_counter8].radius
+                                                    << 1);
+                        }
+
+                    }
+                    pru_rpmsg_rc_status_calibration = 0;
                     break;
                 }
                 case RC_CREATE_CHANNEL_MSG_TYPE:
                 {
                     while (pru_rpmsg_channel(RPMSG_NS_CREATE, &transport,
-                                             RPMSG_RC_CHAN_NAME,
+                    RPMSG_RC_CHAN_NAME,
                                              RPMSG_RC_CHAN_DESC,
                                              RPMSG_RC_CHAN_PORT)
                             != PRU_RPMSG_SUCCESS)
@@ -298,7 +467,7 @@ int main(void)
                 case RC_DESTROY_CHANNEL_MSG_TYPE:
                 {
                     while (pru_rpmsg_channel(RPMSG_NS_DESTROY, &transport,
-                                             RPMSG_RC_CHAN_NAME,
+                    RPMSG_RC_CHAN_NAME,
                                              RPMSG_RC_CHAN_DESC,
                                              RPMSG_RC_CHAN_PORT)
                             != PRU_RPMSG_SUCCESS)

@@ -202,7 +202,7 @@ int main(void)
             {
                 if (rc_receiver_extract_Data(RC_BUFFER))
                 {
-                    pru0_data_struct->rc.throttle = MAX(0, (RC_BUFFER[2] >> 1)+16383); // range from 0 to 32767
+                    pru0_data_struct->rc.throttle = RC_BUFFER[2]; //MAX(0, (RC_BUFFER[2] >> 1)+16383); // range from 0 to 32767
                     pru0_data_struct->rc.yaw = RC_BUFFER[4];
                     pru0_data_struct->rc.pitch = RC_BUFFER[3];
                     pru0_data_struct->rc.roll = RC_BUFFER[1];
