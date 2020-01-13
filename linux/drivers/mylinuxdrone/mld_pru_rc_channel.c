@@ -258,8 +258,33 @@ static int pru_rc_driver_cb(struct rpmsg_device *rpdev, void *data,
       }
       case RC_CALIBRATION_DISABLED_MSG_TYPE:
       {
+          unsigned char startMessage[sizeof(PrbMessageType)];
+          int ret;
           rcdev->status.status = MLD_RC_DEVICE_STATUS_STARTED;
           printk(KERN_DEBUG "RC status: STARTED\n");
+
+          // send get rc configuration request to pru
+          ((PrbMessageType*)startMessage)->message_type = RC_ENABLE_MSG_TYPE;
+          ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
+          if (ret) {
+              printk(KERN_ERROR "Sorry!! cannot get rc configuration from pru [err=%d]\n", ret);
+           }
+          break;
+      }
+      case RC_CONFIG_DATA_MSG_TYPE: {
+          PrbConfigMessageType* rcConfig = (PrbConfigMessageType*)dataStruct;
+          for(int i = 0; i < 8; i++) {
+              printk(KERN_DEBUG "RC_CNF[%d]: [%d, %d, %d, %d, %d, %d, %d].\n",
+                     i,
+                     rcConfig->rc_config.chan[i].rawMin,
+                     rcConfig->rc_config.chan[i].rawCenter,
+                     rcConfig->rc_config.chan[i].rawMax,
+                     rcConfig->rc_config.chan[i].min,
+                     rcConfig->rc_config.chan[i].max,
+                     rcConfig->rc_config.chan[i].radius,
+                     rcConfig->rc_config.chan[i].factor
+                     );
+          }
           break;
       }
       case RC_DATA_MSG_TYPE: {

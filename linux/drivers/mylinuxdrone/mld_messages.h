@@ -21,7 +21,8 @@
 #ifndef MLD_MESSAGES_H_
 #define MLD_MESSAGES_H_
 
-enum message_types {
+enum message_types
+{
     MPU_DATA_MSG_TYPE = 0,
     COMPASS_DATA_MSG_TYPE,
     BAROMETER_DATA_MSG_TYPE,
@@ -45,7 +46,9 @@ enum message_types {
     RC_CALIBRATION_ENABLE_MSG_TYPE,
     RC_CALIBRATION_ENABLED_MSG_TYPE,
     RC_CALIBRATION_DISABLE_MSG_TYPE,
-    RC_CALIBRATION_DISABLED_MSG_TYPE
+    RC_CALIBRATION_DISABLED_MSG_TYPE,
+    RC_GET_CONFIG_MSG_TYPE,
+    RC_CONFIG_DATA_MSG_TYPE
 };
 
 typedef struct
@@ -53,7 +56,8 @@ typedef struct
     uint32_t message_type;
     union
     {
-        struct {
+        struct
+        {
             int16_t throttle;
             int16_t yaw;
             int16_t pitch;
@@ -63,10 +67,12 @@ typedef struct
             int16_t aux3;
             int16_t aux4;
         } rc;
-        struct {
+        struct
+        {
             int16_t chan[8];
         } rc_array;
-        struct {
+        struct
+        {
             uint16_t m1;
             uint16_t m2;
             uint16_t m3;
@@ -104,5 +110,24 @@ typedef struct
         } MpuConfMessage;
     };
 } PrbMessageType;
+
+typedef struct {
+    uint32_t message_type;
+    union {
+        struct
+        {
+            struct
+            {
+                int16_t rawMin;
+                int16_t rawCenter;
+                int16_t rawMax;
+                int16_t min;
+                int16_t max;
+                int16_t radius;
+                uint16_t factor;
+            } chan[8];
+        } rc_config;
+    };
+} PrbConfigMessageType;
 
 #endif /* MLD_MESSAGES_H_ */

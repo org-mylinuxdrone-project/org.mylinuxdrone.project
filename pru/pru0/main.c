@@ -20,6 +20,9 @@ unsigned char received_arm_data[sizeof(PrbMessageType)] = { '\0' };
 unsigned char received_pru1_data[sizeof(PrbMessageType)] = { '\0' };
 PrbMessageType* received_pru1_data_struct = (PrbMessageType*) received_pru1_data;
 PrbMessageType* received_arm_data_struct = (PrbMessageType*) received_arm_data;
+unsigned char pru_rpmsg_config_data[sizeof(PrbConfigMessageType)] = { '\0' };
+PrbConfigMessageType* pru_rpmsg_config_data_struct = (PrbConfigMessageType*) pru_rpmsg_config_data;
+
 int counter32 = 0;
 uint8_t pru_rpmsg_imu_data_changed_flag = 0;
 uint8_t pru_rpmsg_rc_data_changed_flag = 0;
@@ -31,7 +34,6 @@ int16_t pru_rpmsg_rc[8] = { 0 };
 /*******************************************************************************
  * RC Definitions
  *******************************************************************************/
-
 typedef struct
 {
     int16_t rawMin;
@@ -58,37 +60,9 @@ rc_receiver_chan_def_struct rc_receiver_chan_def[8] = {
         { 1081, 1855, 2629, 1081, 2629, 774, 43351 }, // aux3
         { 1081, 1855, 2629, 1081, 2629, 774, 43351 }  // aux4
 };
-
-/*
- * Riceve in input un array di 8 elementi di tipo rc_receiver_chan_def_struct
- */
-void rc_receiver_set_conf(rc_receiver_chan_def_struct* conf)
-{
-    for (pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8; pru_rpmsg_counter8++)
-    {
-        rc_receiver_chan_def[pru_rpmsg_counter8].rawMin =
-                (conf[pru_rpmsg_counter8].rawMin);
-        rc_receiver_chan_def[pru_rpmsg_counter8].rawMax =
-                (conf[pru_rpmsg_counter8].rawMax);
-        rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter =
-                (conf[pru_rpmsg_counter8].rawCenter);
-
-        rc_receiver_chan_def[pru_rpmsg_counter8].radius = MIN(
-                abs(rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
-                        - (rc_receiver_chan_def[pru_rpmsg_counter8].rawMin)),
-                abs(rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
-                        - (rc_receiver_chan_def[pru_rpmsg_counter8].rawMax)));
-
-        rc_receiver_chan_def[pru_rpmsg_counter8].min =
-                rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
-                        - rc_receiver_chan_def[pru_rpmsg_counter8].radius;
-        rc_receiver_chan_def[pru_rpmsg_counter8].max =
-                rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter
-                        + rc_receiver_chan_def[pru_rpmsg_counter8].radius;
-        rc_receiver_chan_def[pru_rpmsg_counter8].factor = ((uint32_t) 65535
-                << 10) / (rc_receiver_chan_def[pru_rpmsg_counter8].radius << 1);
-    }
-}
+/*******************************************************************************
+ * END of RC Definitions
+ *******************************************************************************/
 
 static void prb_init_buffers()
 {
@@ -263,7 +237,7 @@ int main(void)
                 if (pru_rpmsg_rc_status_calibration == 0)
                 {
                     // scale rc values
-                    for (pru_rpmsg_counter8 = 1; pru_rpmsg_counter8 < 9;
+                    for (pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8;
                             pru_rpmsg_counter8++)
                     {
                         received_pru1_data_struct->rc_array.chan[pru_rpmsg_counter8] =
@@ -286,7 +260,7 @@ int main(void)
                 {
                     // calc rawMin, rawMax, rawCenter values
                     // NOTA: calibration must be started with stick on the center position
-                    for (pru_rpmsg_counter8 = 1; pru_rpmsg_counter8 < 9;
+                    for (pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8;
                             pru_rpmsg_counter8++)
                     {
                         pru_rpmsg_rc_chan_temp =
@@ -318,7 +292,7 @@ int main(void)
                 pru_rpmsg_rc[POS_PITCH] = received_pru1_data_struct->rc.pitch;
                 pru_rpmsg_rc[POS_ROLL] = received_pru1_data_struct->rc.roll;
                 pru_rpmsg_rc[POS_THROTTLE] =
-                        received_pru1_data_struct->rc.throttle; // MAX(0, (RC_BUFFER[2] >> 1)+16384);
+                        received_pru1_data_struct->rc.throttle;
                 pru_rpmsg_rc[POS_AUX1] = received_pru1_data_struct->rc.aux1;
                 pru_rpmsg_rc[POS_AUX2] = received_pru1_data_struct->rc.aux2;
                 pru_rpmsg_rc[POS_AUX3] = received_pru1_data_struct->rc.aux3;
@@ -432,7 +406,7 @@ int main(void)
                     if (pru_rpmsg_rc_status_calibration)
                     {
                         // calc rc radius, min, max
-                        for (pru_rpmsg_counter8 = 1; pru_rpmsg_counter8 < 9;
+                        for (pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8;
                                 pru_rpmsg_counter8++)
                         {
                             rc_receiver_chan_def[pru_rpmsg_counter8].radius =
@@ -452,6 +426,25 @@ int main(void)
 
                     }
                     pru_rpmsg_rc_status_calibration = 0;
+                    break;
+                }
+                case RC_GET_CONFIG_MSG_TYPE: {
+                    src_rc_channel = src;
+                    // send rc config data from PRU0 to ARM
+                    received_pru1_data_struct->message_type =
+                            RC_CONFIG_DATA_MSG_TYPE;
+                    for(pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8; pru_rpmsg_counter8++) {
+                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].rawMin = rc_receiver_chan_def[pru_rpmsg_counter8].rawMin;
+                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].rawMax = rc_receiver_chan_def[pru_rpmsg_counter8].rawMax;
+                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].rawCenter = rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter;
+                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].min = rc_receiver_chan_def[pru_rpmsg_counter8].min;
+                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].max = rc_receiver_chan_def[pru_rpmsg_counter8].max;
+                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].radius = rc_receiver_chan_def[pru_rpmsg_counter8].radius;
+                        pru_rpmsg_config_data_struct->rc_config.chan[pru_rpmsg_counter8].factor = rc_receiver_chan_def[pru_rpmsg_counter8].factor;
+                    }
+                    pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
+                                   src_rc_channel, pru_rpmsg_config_data_struct,
+                                   sizeof(PrbConfigMessageType));
                     break;
                 }
                 case RC_CREATE_CHANNEL_MSG_TYPE:
