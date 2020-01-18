@@ -22,6 +22,7 @@ PrbMessageType* received_pru1_data_struct = (PrbMessageType*) received_pru1_data
 PrbMessageType* received_arm_data_struct = (PrbMessageType*) received_arm_data;
 unsigned char pru_rpmsg_config_data[sizeof(PrbConfigMessageType)] = { '\0' };
 PrbConfigMessageType* pru_rpmsg_config_data_struct = (PrbConfigMessageType*) pru_rpmsg_config_data;
+struct pru_controller_status* pru_rpmsg_pid_values;
 
 int counter32 = 0;
 uint8_t pru_rpmsg_imu_data_changed_flag = 0;
@@ -62,6 +63,10 @@ rc_receiver_chan_def_struct rc_receiver_chan_def[8] = {
 };
 /*******************************************************************************
  * END of RC Definitions
+ *******************************************************************************/
+
+/*******************************************************************************
+ * PID Definitions
  *******************************************************************************/
 
 static void prb_init_buffers()
@@ -205,10 +210,16 @@ int main(void)
                     pru_rpmsg_gyro[2 - counter32] =
                             received_pru1_data_struct->mpu_accel_gyro_vect.gyro[counter32];
                 }
+
                 pru_controller_apply(pru_rpmsg_rc, pru_rpmsg_accel,
                                      pru_rpmsg_gyro);
 
-                // nothing to do ... send data as is to the ARM
+                /*TODO:
+                 * - Quando inviare i dati Pid? (con quale frequenza?)
+                 * - Gestire l'attivazione/disattivazione del PID
+                 */
+                pru_rpmsg_pid_values = pru_controller_get_status();
+
                 // send data from PRU1 to ARM
                 if (src_mpu_channel != 0)
                 {

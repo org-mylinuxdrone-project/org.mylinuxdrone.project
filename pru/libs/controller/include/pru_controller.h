@@ -57,7 +57,15 @@
 #define LIMIT(V,MX,MN)                        (MAX((MN),MIN((V),(MX))))
 #endif
 
+struct pru_controller_status {
+    int16_t F[4];      // LSB motori
+    int16_t MErr[4];   // FixPoint 10 bit
+    int16_t MIErr[4];  // FixPoint 10 bit
+    int16_t MDErr[4];  // FixPoint 10 bit
+    int16_t M[4];      // Momenti [Y,P,R,T]
+};
 
 void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro);
+struct pru_controller_status* pru_controller_get_status();
 
 #endif /* PRU_CONTROLLER_H_ */

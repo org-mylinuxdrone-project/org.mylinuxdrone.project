@@ -108,6 +108,14 @@ typedef struct
             uint16_t gyro_offset[3];
             uint16_t accel_offset[3];
         } MpuConfMessage;
+        struct
+        {
+            int16_t F[4];      // LSB motori
+            int16_t MErr[4];   // FixPoint 10 bit
+            int16_t MIErr[4];  // FixPoint 10 bit
+            int16_t MDErr[4];  // FixPoint 10 bit
+            int16_t M[4];      // Momenti [Y,P,R,T]
+        } pid;
     };
 } PrbMessageType;
 

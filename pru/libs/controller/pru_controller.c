@@ -54,9 +54,9 @@
 */
 
 /* TODO:
- * Input: RC(i) in gradi, Accel, Gyro
+ * Input: RC(i), Accel, Gyro tutti in LSB
  *        I dati devono essere forniti in scala e già rispetto agli assi definiti (matrici direzione già applicate)
- * Stato: F, M, MErr, MIErr, MDErr, Throttle (F, MErr* inizializzati a zero, M inizializzato a [Gyro, Throttle])
+ * Stato: F, M, MErr, MIErr, MDErr, Throttle
  * Parametri: ke, ki, kd
  * Calcolo:
  * - MErr(i)=Throttle(i)- Gyro(i)
@@ -67,67 +67,74 @@
  * Output:F(i)
  *   l'output è inviato direttamente al controller motori.
  */
-int16_t M[4] = {0}; // sostituito
-int16_t F[4] = {0}; // accumulato
-int16_t MErr[4] = {0};    // sostituito
-int16_t MIErr[4] = {0};   // accumulato
-int16_t MDErr[4] = {0};   // sostituito
+struct pru_controller_status pru_controller_status_val = {
+                                                          {0, 0, 0, 0}, // F
+                                                          {0, 0, 0, 0}, // MErr
+                                                          {0, 0, 0, 0}, // MIErr
+                                                          {0, 0, 0, 0}, // MDErr
+                                                          {0, 0, 0, 0}, // M
+};
 uint16_t ke = 0x0080;    // fix point 8 bits (0x0100 corrisponde a 1)
 uint16_t ki = 0x0000;    // fix point 8 bits
 uint16_t kd = 0x0000;    // fix point 8 bits
-int16_t throttlePrev = 0;
+uint16_t yke = 0x0080;    // fix point 8 bits (0x0100 corrisponde a 1)
+uint16_t yki = 0x0000;    // fix point 8 bits
+uint16_t ykd = 0x0000;    // fix point 8 bits
+
 int8_t invA[4][4] = {
                     {-1, -1, -1, 1 },
                     {-1,  1,  1, 1 },
                     { 1, -1,  1, 1 },
-                    { 1,  1, -1, 1 },
+                    { 1,  1, -1, 1 }
 };
-int16_t F1 = 0;
-int16_t F2 = 0;
-int16_t F3 = 0;
-int16_t F4 = 0;
-
-int16_t M1 = 0;
-int16_t M2 = 0;
-int16_t M3 = 0;
-int16_t M4 = 0;
-
+struct pru_controller_status* pru_controller_get_status() {
+    return &pru_controller_status_val;
+}
 void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro) {
     uint8_t i = 0;
     uint8_t j = 0;
     int16_t prevErr = 0;
-    for(i = 0; i < 3; i++) {
-        prevErr = MErr[i];
-        MErr[i] = rc[i] - gyro[i];
-        MDErr[i] = MErr[i] - prevErr;
-        MIErr[i] += MErr[i]; // <---TODO: Gestire limiti max, min
-        M[i] = ((ke*MErr[i]) >> 8)+((ki*MIErr[i]) >> 8) + ((kd*MDErr[i]) >> 8);
-    }
+
+    prevErr = pru_controller_status_val.MErr[POS_YAW];
+    pru_controller_status_val.MErr[POS_YAW] = rc[POS_YAW] - gyro[POS_YAW];
+    pru_controller_status_val.MDErr[POS_YAW] = pru_controller_status_val.MErr[POS_YAW] - prevErr;
+    pru_controller_status_val.MIErr[POS_YAW] += pru_controller_status_val.MErr[POS_YAW]; // <---TODO: Gestire limiti max, min
+    pru_controller_status_val.M[POS_YAW] = ((yke*pru_controller_status_val.MErr[POS_YAW]) >> 8)+
+                                           ((yki*pru_controller_status_val.MIErr[POS_YAW]) >> 8) +
+                                           ((ykd*pru_controller_status_val.MDErr[POS_YAW]) >> 8);
+
+    prevErr = pru_controller_status_val.MErr[POS_PITCH];
+    pru_controller_status_val.MErr[POS_PITCH] = rc[POS_PITCH] - gyro[POS_PITCH];
+    pru_controller_status_val.MDErr[POS_PITCH] = pru_controller_status_val.MErr[POS_PITCH] - prevErr;
+    pru_controller_status_val.MIErr[POS_PITCH] += pru_controller_status_val.MErr[POS_PITCH]; // <---TODO: Gestire limiti max, min
+    pru_controller_status_val.M[POS_PITCH] = ((ke*pru_controller_status_val.MErr[POS_PITCH]) >> 8)+
+                                             ((ki*pru_controller_status_val.MIErr[POS_PITCH]) >> 8) +
+                                             ((kd*pru_controller_status_val.MDErr[POS_PITCH]) >> 8);
+
+    prevErr = pru_controller_status_val.MErr[POS_ROLL];
+    pru_controller_status_val.MErr[POS_ROLL] = rc[POS_ROLL] - gyro[POS_ROLL];
+    pru_controller_status_val.MDErr[POS_ROLL] = pru_controller_status_val.MErr[POS_ROLL] - prevErr;
+    pru_controller_status_val.MIErr[POS_ROLL] += pru_controller_status_val.MErr[POS_ROLL]; // <---TODO: Gestire limiti max, min
+    pru_controller_status_val.M[POS_ROLL] = ((ke*pru_controller_status_val.MErr[POS_ROLL]) >> 8)+
+                                            ((ki*pru_controller_status_val.MIErr[POS_ROLL]) >> 8) +
+                                            ((kd*pru_controller_status_val.MDErr[POS_ROLL]) >> 8);
 
     /* TODO:
      * Per ora non verifico l'accelerazione verticale
      * sarà implementazione successiva
      */
-    MErr[POS_THROTTLE] = 0;
-    MDErr[POS_THROTTLE] = 0;
-    MIErr[POS_THROTTLE] = 0;
-    M[POS_THROTTLE] = rc[POS_THROTTLE];
+    pru_controller_status_val.MErr[POS_THROTTLE] = 0;
+    pru_controller_status_val.MDErr[POS_THROTTLE] = 0;
+    pru_controller_status_val.MIErr[POS_THROTTLE] = 0;
+    pru_controller_status_val.M[POS_THROTTLE] = rc[POS_THROTTLE];
     for(i = 0; i < 4; i++) {
-        F[i] = 0;
+        pru_controller_status_val.F[i] = 0;
         for(j = 0; j < 4; j++) {
             // invA corrisponde a 4*A^(-1) per questo >> 2
-            F[i] += ((invA[i][j]*M[j]) >> 2);
+            pru_controller_status_val.F[i] += ((invA[i][j]*pru_controller_status_val.M[j]) >> 2);
         }
+        pru_controller_status_val.F[i] = MAX(0, pru_controller_status_val.F[i]); // non possono essere negative
     }
-    F1 = F[0];
-    F2 = F[1];
-    F3 = F[2];
-    F4 = F[3];
-
-    M1 = M[0];
-    M2 = M[1];
-    M3 = M[2];
-    M4 = M[3];
 
     /* TODO:
      * Inviare F al controller motori
