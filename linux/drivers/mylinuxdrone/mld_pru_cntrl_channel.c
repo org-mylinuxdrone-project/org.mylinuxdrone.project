@@ -203,9 +203,75 @@ static ssize_t rc_enable_store(struct device *dev,
 }
 static DEVICE_ATTR_WO(rc_enable);
 
+/***********************************************************
+ * PID ENABLE/DISABLE ATTRIBUTES
+ ***********************************************************/
+static int enable_pid(struct mylinuxdrone_device *cntrl) {
+    struct rpmsg_device* rpdev;
+    unsigned char startMessage[sizeof(PrbMessageType)];
+    int ret;
+    printk(KERN_DEBUG "enable_pid\n");
+    rpdev = dev_get_drvdata(&cntrl->dev);
+
+    ((PrbMessageType*)startMessage)->message_type = PID_CREATE_CHANNEL_MSG_TYPE;
+
+    ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
+    if (ret) {
+        dev_err(&cntrl->dev, "Failed sending enable pid message to PRUs\n");
+        // TODO: Inviare un allarme su iio status
+     }
+    printk(KERN_DEBUG "enable_pid: creation of pru_pid device requested.\n");
+    // TODO: Aggiornare status: 'Waiting for IMU connection'
+    return 0;
+}
+static int disable_pid(struct mylinuxdrone_device *cntrl) {
+    struct rpmsg_device* rpdev;
+    unsigned char startMessage[sizeof(PrbMessageType)];
+    int ret;
+    printk(KERN_DEBUG "disable_pid\n");
+
+    rpdev = dev_get_drvdata(&cntrl->dev);
+
+    ((PrbMessageType*)startMessage)->message_type = PID_DESTROY_CHANNEL_MSG_TYPE;
+
+    ret = rpmsg_send(rpdev->ept, (void *)startMessage, sizeof(PrbMessageType));
+    if (ret) {
+        dev_err(&cntrl->dev, "Failed sending disable pid message to PRUs\n");
+        // TODO: Inviare un allarme su iio buffer
+     }
+    printk(KERN_DEBUG "disable_pid: remove of pru_pid device requested.\n");
+    // TODO: Aggiornare status: 'Waiting for IMU disconnection'
+
+    return 0;
+}
+
+static ssize_t pid_enable_store(struct device *dev,
+                            struct device_attribute *attr,
+                            const char *buf, size_t len)
+{
+        struct mylinuxdrone_device *ch = to_mylinuxdrone_device(dev);
+        unsigned int enable;
+        int ret;
+
+        ret = kstrtouint(buf, 0, &enable);
+        if (ret < 0)
+                return ret;
+        if (enable > 1)
+                return -EINVAL;
+
+        if(enable == 1) {
+            ret = enable_pid(ch);
+        } else {
+            ret = disable_pid(ch);
+        }
+        return ret ? : len;
+}
+static DEVICE_ATTR_WO(pid_enable);
+
 static struct attribute *pru_control_attrs[] = {
         &dev_attr_imu_enable.attr,
         &dev_attr_rc_enable.attr,
+        &dev_attr_pid_enable.attr,
         NULL,
 };
 ATTRIBUTE_GROUPS(pru_control);

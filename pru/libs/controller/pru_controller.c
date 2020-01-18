@@ -72,14 +72,18 @@ struct pru_controller_status pru_controller_status_val = {
                                                           {0, 0, 0, 0}, // MErr
                                                           {0, 0, 0, 0}, // MIErr
                                                           {0, 0, 0, 0}, // MDErr
-                                                          {0, 0, 0, 0}, // M
+                                                          {0, 0, 0, 0}  // M
 };
-uint16_t ke = 0x0080;    // fix point 8 bits (0x0100 corrisponde a 1)
-uint16_t ki = 0x0000;    // fix point 8 bits
-uint16_t kd = 0x0000;    // fix point 8 bits
-uint16_t yke = 0x0080;    // fix point 8 bits (0x0100 corrisponde a 1)
-uint16_t yki = 0x0000;    // fix point 8 bits
-uint16_t ykd = 0x0000;    // fix point 8 bits
+struct pru_controller_config pru_controller_config_val = {
+                                                          0x0080,    // ke: fix point 8 bits (0x0100 corrisponde a 1)
+                                                          0x0000,    // ki: fix point 8 bits
+                                                          0x0000,    // kd: fix point 8 bits
+                                                          0x0080,    // yke: fix point 8 bits (0x0100 corrisponde a 1)
+                                                          0x0000,    // yki: fix point 8 bits
+                                                          0x0000,    // ykd: fix point 8 bits
+                                                          0x13,      // kgyro: fix point 5 bit
+                                                          0x04       // mas: num samples accel
+};
 
 int8_t invA[4][4] = {
                     {-1, -1, -1, 1 },
@@ -87,37 +91,55 @@ int8_t invA[4][4] = {
                     { 1, -1,  1, 1 },
                     { 1,  1, -1, 1 }
 };
+uint8_t pru_controller_enabled = 0;
+
 struct pru_controller_status* pru_controller_get_status() {
     return &pru_controller_status_val;
 }
+struct pru_controller_config* pru_controller_get_config() {
+    return &pru_controller_config_val;
+}
+void pru_controller_enable() {
+    pru_controller_enabled = 1;
+}
+void pru_controller_disable() {
+    pru_controller_enabled = 0;
+}
+uint8_t pru_controller_is_enabled() {
+    return pru_controller_enabled;
+}
+
 void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro) {
     uint8_t i = 0;
     uint8_t j = 0;
     int16_t prevErr = 0;
 
+    if(pru_controller_enabled == 0) {
+        return;
+    }
     prevErr = pru_controller_status_val.MErr[POS_YAW];
     pru_controller_status_val.MErr[POS_YAW] = rc[POS_YAW] - gyro[POS_YAW];
     pru_controller_status_val.MDErr[POS_YAW] = pru_controller_status_val.MErr[POS_YAW] - prevErr;
     pru_controller_status_val.MIErr[POS_YAW] += pru_controller_status_val.MErr[POS_YAW]; // <---TODO: Gestire limiti max, min
-    pru_controller_status_val.M[POS_YAW] = ((yke*pru_controller_status_val.MErr[POS_YAW]) >> 8)+
-                                           ((yki*pru_controller_status_val.MIErr[POS_YAW]) >> 8) +
-                                           ((ykd*pru_controller_status_val.MDErr[POS_YAW]) >> 8);
+    pru_controller_status_val.M[POS_YAW] = ((pru_controller_config_val.yke*pru_controller_status_val.MErr[POS_YAW]) >> 8)+
+                                           ((pru_controller_config_val.yki*pru_controller_status_val.MIErr[POS_YAW]) >> 8) +
+                                           ((pru_controller_config_val.ykd*pru_controller_status_val.MDErr[POS_YAW]) >> 8);
 
     prevErr = pru_controller_status_val.MErr[POS_PITCH];
     pru_controller_status_val.MErr[POS_PITCH] = rc[POS_PITCH] - gyro[POS_PITCH];
     pru_controller_status_val.MDErr[POS_PITCH] = pru_controller_status_val.MErr[POS_PITCH] - prevErr;
     pru_controller_status_val.MIErr[POS_PITCH] += pru_controller_status_val.MErr[POS_PITCH]; // <---TODO: Gestire limiti max, min
-    pru_controller_status_val.M[POS_PITCH] = ((ke*pru_controller_status_val.MErr[POS_PITCH]) >> 8)+
-                                             ((ki*pru_controller_status_val.MIErr[POS_PITCH]) >> 8) +
-                                             ((kd*pru_controller_status_val.MDErr[POS_PITCH]) >> 8);
+    pru_controller_status_val.M[POS_PITCH] = ((pru_controller_config_val.ke*pru_controller_status_val.MErr[POS_PITCH]) >> 8)+
+                                             ((pru_controller_config_val.ki*pru_controller_status_val.MIErr[POS_PITCH]) >> 8) +
+                                             ((pru_controller_config_val.kd*pru_controller_status_val.MDErr[POS_PITCH]) >> 8);
 
     prevErr = pru_controller_status_val.MErr[POS_ROLL];
     pru_controller_status_val.MErr[POS_ROLL] = rc[POS_ROLL] - gyro[POS_ROLL];
     pru_controller_status_val.MDErr[POS_ROLL] = pru_controller_status_val.MErr[POS_ROLL] - prevErr;
     pru_controller_status_val.MIErr[POS_ROLL] += pru_controller_status_val.MErr[POS_ROLL]; // <---TODO: Gestire limiti max, min
-    pru_controller_status_val.M[POS_ROLL] = ((ke*pru_controller_status_val.MErr[POS_ROLL]) >> 8)+
-                                            ((ki*pru_controller_status_val.MIErr[POS_ROLL]) >> 8) +
-                                            ((kd*pru_controller_status_val.MDErr[POS_ROLL]) >> 8);
+    pru_controller_status_val.M[POS_ROLL] = ((pru_controller_config_val.ke*pru_controller_status_val.MErr[POS_ROLL]) >> 8)+
+                                            ((pru_controller_config_val.ki*pru_controller_status_val.MIErr[POS_ROLL]) >> 8) +
+                                            ((pru_controller_config_val.kd*pru_controller_status_val.MDErr[POS_ROLL]) >> 8);
 
     /* TODO:
      * Per ora non verifico l'accelerazione verticale

@@ -64,8 +64,22 @@ struct pru_controller_status {
     int16_t MDErr[4];  // FixPoint 10 bit
     int16_t M[4];      // Momenti [Y,P,R,T]
 };
+struct pru_controller_config {
+    uint16_t ke;
+    uint16_t ki;
+    uint16_t kd;
+    uint16_t yke;
+    uint16_t yki;
+    uint16_t ykd;
+    uint8_t kgyro; // filtro passa alto gyro: gyro[i] = kgyro*gyro[i-1] + (1-kgyro)*gyro[i];
+    uint8_t mas;   // numero di campioni media accel
+};
+
 
 void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro);
 struct pru_controller_status* pru_controller_get_status();
-
+struct pru_controller_config* pru_controller_get_config();
+void pru_controller_enable();
+void pru_controller_disable();
+uint8_t pru_controller_is_enabled();
 #endif /* PRU_CONTROLLER_H_ */

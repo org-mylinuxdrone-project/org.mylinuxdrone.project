@@ -15,14 +15,16 @@ volatile register uint32_t __R30;
 volatile register uint32_t __R31;
 
 struct pru_rpmsg_transport transport;
-unsigned short src, dst, len, src_mpu_channel, src_rc_channel;
+unsigned short src, dst, len, src_mpu_channel, src_rc_channel, src_pid_channel;
 unsigned char received_arm_data[sizeof(PrbMessageType)] = { '\0' };
 unsigned char received_pru1_data[sizeof(PrbMessageType)] = { '\0' };
 PrbMessageType* received_pru1_data_struct = (PrbMessageType*) received_pru1_data;
 PrbMessageType* received_arm_data_struct = (PrbMessageType*) received_arm_data;
 unsigned char pru_rpmsg_config_data[sizeof(PrbConfigMessageType)] = { '\0' };
-PrbConfigMessageType* pru_rpmsg_config_data_struct = (PrbConfigMessageType*) pru_rpmsg_config_data;
+PrbConfigMessageType* pru_rpmsg_config_data_struct =
+        (PrbConfigMessageType*) pru_rpmsg_config_data;
 struct pru_controller_status* pru_rpmsg_pid_values;
+struct pru_controller_config* pru_rpmsg_pid_config;
 
 int counter32 = 0;
 uint8_t pru_rpmsg_imu_data_changed_flag = 0;
@@ -30,11 +32,11 @@ uint8_t pru_rpmsg_rc_data_changed_flag = 0;
 
 int16_t pru_rpmsg_accel[3] = { 0 };
 int16_t pru_rpmsg_gyro[3] = { 0 };
-int16_t pru_rpmsg_rc[8] = { 0 };
 
 /*******************************************************************************
  * RC Definitions
  *******************************************************************************/
+int16_t pru_rpmsg_rc[8] = { 0 };
 typedef struct
 {
     int16_t rawMin;
@@ -63,10 +65,6 @@ rc_receiver_chan_def_struct rc_receiver_chan_def[8] = {
 };
 /*******************************************************************************
  * END of RC Definitions
- *******************************************************************************/
-
-/*******************************************************************************
- * PID Definitions
  *******************************************************************************/
 
 static void prb_init_buffers()
@@ -161,6 +159,7 @@ int main(void)
 
     src_mpu_channel = 0;
     src_rc_channel = 0;
+    src_pid_channel = 0;
 
     while (1)
     {
@@ -211,21 +210,47 @@ int main(void)
                             received_pru1_data_struct->mpu_accel_gyro_vect.gyro[counter32];
                 }
 
-                pru_controller_apply(pru_rpmsg_rc, pru_rpmsg_accel,
-                                     pru_rpmsg_gyro);
-
-                /*TODO:
-                 * - Quando inviare i dati Pid? (con quale frequenza?)
-                 * - Gestire l'attivazione/disattivazione del PID
-                 */
-                pru_rpmsg_pid_values = pru_controller_get_status();
-
-                // send data from PRU1 to ARM
+                // send mpu data from PRU1 to ARM
                 if (src_mpu_channel != 0)
                 {
                     pru_rpmsg_send(&transport, RPMSG_MPU_CHAN_PORT,
                                    src_mpu_channel, received_pru1_data,
                                    sizeof(PrbMessageType));
+                }
+
+                if (pru_controller_is_enabled())
+                {
+                    pru_controller_apply(pru_rpmsg_rc, pru_rpmsg_accel,
+                                         pru_rpmsg_gyro);
+
+                    /*TODO:
+                     * - Quando inviare i dati Pid? (con quale frequenza?)
+                     * - Gestire l'attivazione/disattivazione del PID
+                     */
+                    pru_rpmsg_pid_values = pru_controller_get_status();
+
+                    // send pid data from PRU1 to ARM
+                    if (src_pid_channel != 0)
+                    {
+                        received_pru1_data_struct->message_type =
+                                PID_DATA_MSG_TYPE;
+                        for (counter32 = 0; counter32 < 4; counter32++)
+                        {
+                            received_pru1_data_struct->pid.F[counter32] =
+                                    pru_rpmsg_pid_values->F[counter32];
+                            received_pru1_data_struct->pid.M[counter32] =
+                                    pru_rpmsg_pid_values->M[counter32];
+                            received_pru1_data_struct->pid.MErr[counter32] =
+                                    pru_rpmsg_pid_values->MErr[counter32];
+                            received_pru1_data_struct->pid.MIErr[counter32] =
+                                    pru_rpmsg_pid_values->MIErr[counter32];
+                            received_pru1_data_struct->pid.MDErr[counter32] =
+                                    pru_rpmsg_pid_values->MDErr[counter32];
+                        }
+                        pru_rpmsg_send(&transport, RPMSG_PID_CHAN_PORT,
+                                       src_pid_channel, received_pru1_data,
+                                       sizeof(PrbMessageType));
+                    }
                 }
                 break;
             } // end case MPU_DATA_MSG_TYPE
@@ -328,14 +353,15 @@ int main(void)
                                   &len) == PRU_RPMSG_SUCCESS)
             {
                 // send data from ARM to PRU1
-                __xout(SP_BANK_0, 3, 0, received_arm_data);
-                // send interrupt to P1
-                CT_INTC.SRSR0_bit.RAW_STS_31_0 |= (1 << INT_P0_TO_P1);
+                if (received_arm_data_struct->message_type > PRU1_EVENTS)
+                {
+                    __xout(SP_BANK_0, 3, 0, received_arm_data);
+                    // send interrupt to P1
+                    CT_INTC.SRSR0_bit.RAW_STS_31_0 |= (1 << INT_P0_TO_P1);
+                }
 
                 switch (received_arm_data_struct->message_type)
                 {
-                // TODO: aggiungere i case per ogni canale
-                // disabilitare prima il sensore relativo al canale
                 case MPU_ENABLE_MSG_TYPE:
                 {
                     src_mpu_channel = src;
@@ -366,6 +392,92 @@ int main(void)
                         ;
                     break;
                 } // end case MPU_DESTROY_CHANNEL_MSG_TYPE
+                case PID_CREATE_CHANNEL_MSG_TYPE:
+                {
+                    while (pru_rpmsg_channel(RPMSG_NS_CREATE, &transport,
+                    RPMSG_PID_CHAN_NAME,
+                                             RPMSG_PID_CHAN_DESC,
+                                             RPMSG_PID_CHAN_PORT)
+                            != PRU_RPMSG_SUCCESS)
+                        ;
+                    break;
+                } // end case PID_CREATE_CHANNEL
+                case PID_DESTROY_CHANNEL_MSG_TYPE:
+                {
+                    pru_controller_disable();
+                    while (pru_rpmsg_channel(RPMSG_NS_DESTROY, &transport,
+                    RPMSG_PID_CHAN_NAME,
+                                             RPMSG_PID_CHAN_DESC,
+                                             RPMSG_PID_CHAN_PORT)
+                            != PRU_RPMSG_SUCCESS)
+                        ;
+                    src_pid_channel = 0;
+                    break;
+                } // end case RC_DESTROY_CHANNEL_MSG_TYPE
+                case PID_ENABLE_MSG_TYPE:
+                {
+                    src_pid_channel = src;
+                    break;
+                }
+                case PID_DISABLE_MSG_TYPE:
+                {
+                    src_pid_channel = src;
+                    break;
+                }
+                case PID_GET_CONFIG_MSG_TYPE:
+                {
+                    src_rc_channel = src;
+                    pru_rpmsg_pid_config = pru_controller_get_config();
+
+                    // send rc config data from PRU0 to ARM
+                    pru_rpmsg_config_data_struct->message_type =
+                            PID_CONFIG_DATA_MSG_TYPE;
+                    pru_rpmsg_config_data_struct->pid_config.ke =
+                            pru_rpmsg_pid_config->ke;
+                    pru_rpmsg_config_data_struct->pid_config.ki =
+                            pru_rpmsg_pid_config->ki;
+                    pru_rpmsg_config_data_struct->pid_config.kd =
+                            pru_rpmsg_pid_config->kd;
+                    pru_rpmsg_config_data_struct->pid_config.yke =
+                            pru_rpmsg_pid_config->yke;
+                    pru_rpmsg_config_data_struct->pid_config.yki =
+                            pru_rpmsg_pid_config->yki;
+                    pru_rpmsg_config_data_struct->pid_config.ykd =
+                            pru_rpmsg_pid_config->ykd;
+                    pru_rpmsg_config_data_struct->pid_config.kgyro =
+                            pru_rpmsg_pid_config->kgyro;
+                    pru_rpmsg_config_data_struct->pid_config.mas =
+                            pru_rpmsg_pid_config->mas;
+
+                    pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
+                                   src_rc_channel, pru_rpmsg_config_data_struct,
+                                   sizeof(PrbConfigMessageType));
+                    break;
+                }
+                case PID_SET_CONFIG_MSG_TYPE:
+                {
+                    src_rc_channel = src;
+                    pru_rpmsg_pid_config = pru_controller_get_config();
+
+                    // send rc config data from PRU0 to ARM
+                    pru_rpmsg_pid_config->ke =
+                            pru_rpmsg_config_data_struct->pid_config.ke;
+                    pru_rpmsg_pid_config->ki =
+                            pru_rpmsg_config_data_struct->pid_config.ki;
+                    pru_rpmsg_pid_config->kd =
+                            pru_rpmsg_config_data_struct->pid_config.kd;
+                    pru_rpmsg_pid_config->yke =
+                            pru_rpmsg_config_data_struct->pid_config.yke;
+                    pru_rpmsg_pid_config->yki =
+                            pru_rpmsg_config_data_struct->pid_config.yki;
+                    pru_rpmsg_pid_config->ykd =
+                            pru_rpmsg_config_data_struct->pid_config.ykd;
+                    pru_rpmsg_pid_config->kgyro =
+                            pru_rpmsg_config_data_struct->pid_config.kgyro;
+                    pru_rpmsg_pid_config->mas =
+                            pru_rpmsg_config_data_struct->pid_config.mas;
+                    break;
+                }
                 case RC_ENABLE_MSG_TYPE:
                 {
                     src_rc_channel = src;
@@ -437,19 +549,29 @@ int main(void)
                     pru_rpmsg_rc_status_calibration = 0;
                     break;
                 }
-                case RC_GET_CONFIG_MSG_TYPE: {
+                case RC_GET_CONFIG_MSG_TYPE:
+                {
                     src_rc_channel = src;
                     // send rc config data from PRU0 to ARM
                     pru_rpmsg_config_data_struct->message_type =
                             RC_CONFIG_DATA_MSG_TYPE;
-                    for(pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8; pru_rpmsg_counter8++) {
-                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].rawMin = rc_receiver_chan_def[pru_rpmsg_counter8].rawMin;
-                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].rawMax = rc_receiver_chan_def[pru_rpmsg_counter8].rawMax;
-                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].rawCenter = rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter;
-                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].min = rc_receiver_chan_def[pru_rpmsg_counter8].min;
-                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].max = rc_receiver_chan_def[pru_rpmsg_counter8].max;
-                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].radius = rc_receiver_chan_def[pru_rpmsg_counter8].radius;
-                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].factor = rc_receiver_chan_def[pru_rpmsg_counter8].factor;
+                    for (pru_rpmsg_counter8 = 0; pru_rpmsg_counter8 < 8;
+                            pru_rpmsg_counter8++)
+                    {
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].rawMin =
+                                rc_receiver_chan_def[pru_rpmsg_counter8].rawMin;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].rawMax =
+                                rc_receiver_chan_def[pru_rpmsg_counter8].rawMax;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].rawCenter =
+                                rc_receiver_chan_def[pru_rpmsg_counter8].rawCenter;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].min =
+                                rc_receiver_chan_def[pru_rpmsg_counter8].min;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].max =
+                                rc_receiver_chan_def[pru_rpmsg_counter8].max;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].radius =
+                                rc_receiver_chan_def[pru_rpmsg_counter8].radius;
+                        pru_rpmsg_config_data_struct->rc_config_chan[pru_rpmsg_counter8].factor =
+                                rc_receiver_chan_def[pru_rpmsg_counter8].factor;
                     }
                     pru_rpmsg_send(&transport, RPMSG_RC_CHAN_PORT,
                                    src_rc_channel, pru_rpmsg_config_data_struct,

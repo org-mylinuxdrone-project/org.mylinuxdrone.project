@@ -32,14 +32,14 @@ enum mld_pid_device_status_enum {
     MLD_PID_DEVICE_STATUS_ERROR
 };
 
-struct mld_pid_device_chan_config {
+struct mld_pid_device_config {
     uint16_t ke;
     uint16_t ki;
     uint16_t kd;
     uint16_t yke;
     uint16_t yki;
     uint16_t ykd;
-    uint8_t kgyro; // filtro passa alto gyro: gyro[i] = k*gyro[i-1] + (1-k)*gyro[i];
+    uint8_t kgyro; // filtro passa alto gyro: gyro[i] = kgyro*gyro[i-1] + (1-kgyro)*gyro[i];
     uint8_t mas;   // numero di campioni media accel
 };
 
@@ -53,7 +53,7 @@ struct mld_pid_device_data {
 
 struct mld_pid_device_status {
     enum mld_pid_device_status_enum status;
-    struct mld_pid_device_chan_config config;
+    struct mld_pid_device_config config;
     struct mld_pid_device_data data;
 };
 
