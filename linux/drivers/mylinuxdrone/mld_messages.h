@@ -23,7 +23,21 @@
 
 enum message_types
 {
-    MPU_DATA_MSG_TYPE = 0,
+    PRU0_EVENTS = 0, // Start literals of pru0 events
+    PID_ENABLE_MSG_TYPE,
+    PID_DISABLE_MSG_TYPE,
+    PID_CREATE_CHANNEL_MSG_TYPE,
+    PID_DESTROY_CHANNEL_MSG_TYPE,
+    PID_DATA_MSG_TYPE,
+    PID_CALIBRATION_ENABLE_MSG_TYPE,
+    PID_CALIBRATION_ENABLED_MSG_TYPE,
+    PID_CALIBRATION_DISABLE_MSG_TYPE,
+    PID_CALIBRATION_DISABLED_MSG_TYPE,
+    PID_GET_CONFIG_MSG_TYPE,
+    PID_SET_CONFIG_MSG_TYPE,
+    PID_CONFIG_DATA_MSG_TYPE,
+    PRU1_EVENTS, // Start literals of pru1 events
+    MPU_DATA_MSG_TYPE,
     COMPASS_DATA_MSG_TYPE,
     BAROMETER_DATA_MSG_TYPE,
     MPU_CONFIG_MSG_TYPE,
@@ -48,7 +62,7 @@ enum message_types
     RC_CALIBRATION_DISABLE_MSG_TYPE,
     RC_CALIBRATION_DISABLED_MSG_TYPE,
     RC_GET_CONFIG_MSG_TYPE,
-    RC_CONFIG_DATA_MSG_TYPE
+    RC_CONFIG_DATA_MSG_TYPE,
 };
 
 typedef struct
@@ -132,6 +146,17 @@ typedef struct {
                 int16_t radius;
                 uint16_t factor;
             } rc_config_chan[8];
+            struct {
+                uint16_t ke;
+                uint16_t ki;
+                uint16_t kd;
+                uint16_t yke;
+                uint16_t yki;
+                uint16_t ykd;
+                uint8_t kgyro; // filtro passa alto gyro: gyro[i] = kgyro*gyro[i-1] + (1-kgyro)*gyro[i];
+                uint8_t mas;   // numero di campioni media accel
+            } pid_config;
+
     };
 } PrbConfigMessageType;
 

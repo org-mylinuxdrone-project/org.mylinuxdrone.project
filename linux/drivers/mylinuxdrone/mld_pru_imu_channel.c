@@ -160,8 +160,7 @@ ATTRIBUTE_GROUPS(pru_imu);
 static int pru_imu_driver_cb(struct rpmsg_device *rpdev, void *data,
                   int len, void *priv, u32 src)
 {
-    printk(KERN_DEBUG "pru_imu_driver_cb [%s].\n", rpdev->id.name);
-    // TODO: trasmettere il messaggio agli observers
+    //printk(KERN_DEBUG "pru_imu_driver_cb [%s].\n", rpdev->id.name);
     return 0;
 }
 

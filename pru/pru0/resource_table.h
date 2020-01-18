@@ -93,6 +93,9 @@ struct ch_map pru_intc_map[] = {{INT_P0_TO_ARM, CHNL_PRU0_TO_ARM},
  #define RPMSG_RC_CHAN_NAME              "pru-rc"
  #define RPMSG_RC_CHAN_PORT              34
  #define RPMSG_RC_CHAN_DESC              "RC Channel"
+ #define RPMSG_PID_CHAN_NAME             "pru-pid"
+ #define RPMSG_PID_CHAN_PORT             36
+ #define RPMSG_PID_CHAN_DESC             "PID Channel"
 
 struct my_resource_table {
         struct resource_table base;

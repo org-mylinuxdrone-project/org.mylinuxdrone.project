@@ -248,7 +248,7 @@ static int pru_rc_driver_cb(struct rpmsg_device *rpdev, void *data,
     int i = 0;
 
     PrbMessageType* dataStruct = (PrbMessageType*)data;
-    printk(KERN_INFO "RC message type: [%d]\n", dataStruct->message_type);
+//    printk(KERN_INFO "RC message type: [%d]\n", dataStruct->message_type);
 
     switch (dataStruct->message_type){
       case RC_CALIBRATION_ENABLED_MSG_TYPE:
@@ -289,7 +289,7 @@ static int pru_rc_driver_cb(struct rpmsg_device *rpdev, void *data,
           break;
       }
       case RC_DATA_MSG_TYPE: {
-          printk(KERN_DEBUG "RC_TYPR12: [%d, %d, %d, %d, %d, %d].\n", dataStruct->rc.throttle, dataStruct->rc.yaw, dataStruct->rc.pitch, dataStruct->rc.roll, dataStruct->rc.aux1, dataStruct->rc.aux2);
+//          printk(KERN_DEBUG "RC_TYPR12: [%d, %d, %d, %d, %d, %d].\n", dataStruct->rc.throttle, dataStruct->rc.yaw, dataStruct->rc.pitch, dataStruct->rc.roll, dataStruct->rc.aux1, dataStruct->rc.aux2);
           break;
       }
       default: {
