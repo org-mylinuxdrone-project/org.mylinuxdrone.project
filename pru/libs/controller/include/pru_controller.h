@@ -79,6 +79,7 @@ struct pru_controller_config {
 void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro);
 struct pru_controller_status* pru_controller_get_status();
 struct pru_controller_config* pru_controller_get_config();
+void pru_controller_init();
 void pru_controller_enable();
 void pru_controller_disable();
 uint8_t pru_controller_is_enabled();

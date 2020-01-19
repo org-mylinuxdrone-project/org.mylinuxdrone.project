@@ -99,16 +99,34 @@ struct pru_controller_status* pru_controller_get_status() {
 struct pru_controller_config* pru_controller_get_config() {
     return &pru_controller_config_val;
 }
+void pru_controller_init() {
+    uint8_t i = 0;
+    pru_controller_enabled = 0;
+
+    for(i = 0; i < 4; i++) {
+        pru_controller_status_val.F[i] = 0;
+        pru_controller_status_val.M[i] = 0;
+        pru_controller_status_val.MErr[i] = 0;
+        pru_controller_status_val.MIErr[i] = 0;
+        pru_controller_status_val.MDErr[i] = 0;
+    }
+}
 void pru_controller_enable() {
+    pru_controller_init();
     pru_controller_enabled = 1;
 }
 void pru_controller_disable() {
-    pru_controller_enabled = 0;
+    pru_controller_init();
 }
 uint8_t pru_controller_is_enabled() {
     return pru_controller_enabled;
 }
 
+/*
+ * TODO: il calcolo del pid ha senso solo se si è in volo ...
+ * Come identificare se si è in volo o no?
+ * Approssimare con posizione throttle ...
+ */
 void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro) {
     uint8_t i = 0;
     uint8_t j = 0;
@@ -160,5 +178,9 @@ void pru_controller_apply(int16_t* rc, int16_t* accel, int16_t* gyro) {
 
     /* TODO:
      * Inviare F al controller motori
+     * Motori a 16KHz (duty minimo 5% del periodo, duty massimo 10% del periodo)
+     * periodo circa 63 microsecondi. Verificare la risposta degli ESC.
+     *
+     *
      */
 }
