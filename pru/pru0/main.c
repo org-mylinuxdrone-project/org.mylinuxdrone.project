@@ -417,11 +417,13 @@ int main(void)
                 case PID_ENABLE_MSG_TYPE:
                 {
                     src_pid_channel = src;
+                    pru_controller_enable();
                     break;
                 }
                 case PID_DISABLE_MSG_TYPE:
                 {
                     src_pid_channel = src;
+                    pru_controller_disable();
                     break;
                 }
                 case PID_GET_CONFIG_MSG_TYPE:

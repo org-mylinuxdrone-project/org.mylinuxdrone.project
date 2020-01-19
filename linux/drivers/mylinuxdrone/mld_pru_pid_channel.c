@@ -231,10 +231,8 @@ static int pru_pid_driver_cb(struct rpmsg_device *rpdev, void *data,
 {
     struct mylinuxdrone_device* mlddev = dev_get_drvdata(&rpdev->dev);
     struct mld_pid_device* piddev = to_mld_pid_device(mlddev);
-    int i = 0;
 
     PrbMessageType* dataStruct = (PrbMessageType*)data;
-    printk(KERN_INFO "PID message type: [%d]\n", dataStruct->message_type);
 
     switch (dataStruct->message_type){
       case PID_CALIBRATION_ENABLED_MSG_TYPE:
@@ -260,7 +258,7 @@ static int pru_pid_driver_cb(struct rpmsg_device *rpdev, void *data,
       }
       case PID_CONFIG_DATA_MSG_TYPE: {
           PrbConfigMessageType* pidConfig = (PrbConfigMessageType*)dataStruct;
-              printk(KERN_DEBUG "PID_CNF: [%d, %d, %d, %d, %d, %d, %d].\n",
+              printk(KERN_DEBUG "PID_CNF: [%d, %d, %d, %d, %d, %d, %d, %d].\n",
                      pidConfig->pid_config.ke,
                      pidConfig->pid_config.ki,
                      pidConfig->pid_config.kd,
